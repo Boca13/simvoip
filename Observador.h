@@ -1,4 +1,12 @@
 #pragma once
+
+#include <ns3/packet.h>
+#include <ns3/average.h>
+
+
+using namespace ns3;
+
+
 class Observador
 {
 public:
