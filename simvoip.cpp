@@ -26,17 +26,23 @@ typedef struct {
 *	Recibe el n�mero de enlaces y su velocidad y el objeto observador a utilizar
 *	devuelve la QoS conseguida
 */
-double simular(uint8_t enlaces, DataRate velocidad, Observador *observador,uint32_t telef1,uint32_t telef2);
+double simular(Punto * resultado, Observador *observador,uint32_t telef1,uint32_t telef2);
 
 
 using namespace ns3;
 
+// Velocidades permitidas
+std::map<uint8_t, DataRate> velocidades;
+
 int main()
 {
 	double qos_objetivo = 1.0;
-	//todo a los datarate tendras que meterle los Mbps o lo que sea
+	uint32_t telef1 = 100;
+	uint32_t telef2 = 100;
 	DataRate v_predef[10] = { DataRate(1), DataRate(2), DataRate(5), DataRate(10), DataRate(20), DataRate(30), DataRate(50), DataRate(100), DataRate(200), DataRate(300) };
-	std::map<uint8_t, DataRate> velocidades;
+
+	// TODO cmd
+
 	for (uint8_t n = 0; n < 10; n++) // Meter valores por defecto
 		velocidades.insert(std::pair<uint8_t, DataRate>(n, v_predef[n]));
 	
@@ -47,9 +53,9 @@ int main()
 	Punto anterior = { 0,0,0.0 };
 	Punto resultado;
 	// Los resultados de las simulaciones se guardan en una estructura para el algoritmo de predicci�n
-	while (qos < qos_objetivo)
+	while (resultado.qos < qos_objetivo)
 	{
-		simular(&resultado, observador);
+		simular(&resultado, observador, telef1, telef2);
 		// ALGORITMO DE PREDICCIÓN LINEALIZANDO
 		// y = mx + n
 		// m = dy/dx (delta)
@@ -87,7 +93,7 @@ int main()
 //todo posible error: a los Routers les estoy instalando las apps que llevan los telefonos y les estoy dando direccionamiento
 //solucionar eso
 
-double simular(uint8_t enlaces, DataRate velocidad, Observador * observador,uint32_t telef1,uint32_t telef2 )
+double simular(Punto * resultado, Observador *observador, uint32_t telef1, uint32_t telef2)
 {
 	// Preparar escenario
 
@@ -158,7 +164,8 @@ double simular(uint8_t enlaces, DataRate velocidad, Observador * observador,uint
 
 
 	// Ejecutar simulaci�n
-
+	 // Utilizar valores de la estructura resultado
+	 // Para obtener la velocidad: velocidades[resultado->velocidad]
 
 	// Calcular calidad de servicio y devolverla
 	return(1.0);
