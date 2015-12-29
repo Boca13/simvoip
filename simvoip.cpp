@@ -14,8 +14,12 @@ using namespace ns3;
 
 NS_LOG_COMPONENT_DEFINE("Simvoip");
 
-// Punto 2D
-typedef std::pair<uint8_t, uint8_t> Punto;
+// Punto 3D
+typedef struct {
+	uint8_t enlaces;
+	uint8_t velocidad;
+	double qos;
+}Punto;
 
 
 /*
@@ -31,22 +35,47 @@ int main()
 {
 	double qos_objetivo = 1.0;
 	//todo a los datarate tendras que meterle los Mbps o lo que sea
-	DataRate velocidades[10] = {DataRate(1), DataRate(2), DataRate(5), DataRate(10), DataRate(20), DataRate(30), DataRate(50), DataRate(100), DataRate(200), DataRate(300)};
+	DataRate v_predef[10] = { DataRate(1), DataRate(2), DataRate(5), DataRate(10), DataRate(20), DataRate(30), DataRate(50), DataRate(100), DataRate(200), DataRate(300) };
+	std::map<uint8_t, DataRate> velocidades;
+	for (uint8_t n = 0; n < 10; n++) // Meter valores por defecto
+		velocidades.insert(std::pair<uint8_t, DataRate>(n, v_predef[n]));
+	
 	Time::SetResolution(Time::US);
 
 
-	double qos = 0.0;
-	uint8_t enlaces = 0;
-	uint8_t velocidad = 0;
 	Observador * observador = new Observador();
-	std::map<Punto, double> historia;
-	std::map<Punto, double>::iterator iterador;
-	// Los resultados de las simulaciones se guardan en un map para el algoritmo de predicci�n
+	Punto anterior = { 0,0,0.0 };
+	Punto resultado;
+	// Los resultados de las simulaciones se guardan en una estructura para el algoritmo de predicci�n
 	while (qos < qos_objetivo)
 	{
-		qos = simular(enlaces, velocidades[velocidad], observador);
-		historia[Punto(enlaces, velocidad)] = qos;
+		simular(&resultado, observador);
+		// ALGORITMO DE PREDICCIÓN LINEALIZANDO
+		// y = mx + n
+		// m = dy/dx (delta)
+		// x = enlaces*velocidad
+		double m = ((resultado.qos - anterior.qos) / ((resultado.enlaces*velocidades[resultado.velocidad].GetBitRate() / 1e6) - (anterior.enlaces*velocidades[anterior.velocidad].GetBitRate() / 1e6)));
+		// qos = mx -> x = qos/m
+		uint32_t x = qos_objetivo / m;
+		// Pasar el resultado al anterior
+		anterior = resultado;
+		// Cambiar coordenadas de resultado para la siguiente iteración
+		// Enlaces mínimos
+		resultado.enlaces = 0;
+		resultado.velocidad = 0;
+		while ((x / velocidades[resultado.velocidad].GetBitRate() / 1e6)>resultado.enlaces)
+		{
+			if (resultado.velocidad == (velocidades.size() - 1))
+			{
+				resultado.enlaces++;
+				resultado.velocidad = 0;
+			}
+			else
+			{
+				resultado.velocidad++;
+			}
 
+		}
 		delete observador;
 	}
 
