@@ -26,28 +26,61 @@ typedef struct {
 *	Recibe el n�mero de enlaces y su velocidad y el objeto observador a utilizar
 *	devuelve la QoS conseguida
 */
-double simular(Punto * resultado, Observador *observador,uint32_t telef1,uint32_t telef2);
+double simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2);
 
 
 using namespace ns3;
 
-// Velocidades permitidas
-std::map<uint8_t, DataRate> velocidades;
-
-int main()
+int main(int argc, char *argv[])
 {
 	double qos_objetivo = 1.0;
 	uint32_t telef1 = 100;
 	uint32_t telef2 = 100;
-	DataRate v_predef[10] = { DataRate(1), DataRate(2), DataRate(5), DataRate(10), DataRate(20), DataRate(30), DataRate(50), DataRate(100), DataRate(200), DataRate(300) };
+	std::string sVelocidades = "1Mbps;2Mbps;5Mbps;10Mbps;20Mbps;30Mbps;50Mbps;100Mbps;200Mbps;300Mbps";
+	double tasaLlamadas = 0.67;
+	std::string sTasaCodec = "64kbps;96kbps";
+	DataRate tasaCodec[2];	// Forman el intervalo en el que estará la tasa distribuida uniformemente
+	std::map<uint8_t, DataRate> velocidades;	// Velocidades permitidas
 
-	// TODO cmd
+	// Obtener parámetros de cmd
+	CommandLine cmd;
+	cmd.AddValue("qos", "Calidad de servicio objetivo", qos_objetivo);
+	cmd.AddValue("tA", "Número de usuarios en la sede A", telef1);
+	cmd.AddValue("tB", "Número de usuarios en la sede B", telef2);
+	cmd.AddValue("velocidades", "velocidades de enlace que se pueden contratar con el operador separadas por ;", sVelocidades);
+	cmd.AddValue("tasaLlamadas", "Tasa media de ocurrencia de llamadas de los usuarios", tasaLlamadas);
+	cmd.AddValue("tasaCodec", "Intervalo de la tasa de bits del códec de audio", sTasaCodec);
+	cmd.Parse(argc, argv);
 
-	for (uint8_t n = 0; n < 10; n++) // Meter valores por defecto
-		velocidades.insert(std::pair<uint8_t, DataRate>(n, v_predef[n]));
+
+	// Parsear cadena introduciendo velocidades de enlace posibles en el map
+	size_t posicion = 0;
+	uint8_t n = 0;
+	while ((posicion = sVelocidades.find(";")) != std::string::npos) {
+		// Guardar cada elemento en el map
+		velocidades[n] = DataRate(sVelocidades.substr(0, posicion));
+		sVelocidades.erase(0, posicion + 1);
+	}
+
+	// Parsear intervalo de tasa del codec
+	n = 0;
+	while ((posicion = sTasaCodec.find(";")) != std::string::npos) {
+		tasaCodec[n] = DataRate(sTasaCodec.substr(0, posicion));
+		sTasaCodec.erase(0, posicion + 1);
+	}
+
+	// TODO Preparar gráficas
+	// Gráfica 1
+	Gnuplot plot1;
+	plot1.SetTitle("---");
+	plot1.SetLegend("Tiempo medio de permanencia en el estado On", "Porcentaje de paquetes correctamente transmitidos");
+	// Gráfica 2
+	Gnuplot plot2;
+	plot2.SetTitle("---");
+	plot2.SetLegend("Tiempo medio de permanencia en el estado On", "Latencia (us)");
+
 	
 	Time::SetResolution(Time::US);
-
 
 	Observador * observador = new Observador();
 	Punto anterior = { 0,0,0.0 };
@@ -55,7 +88,7 @@ int main()
 	// Los resultados de las simulaciones se guardan en una estructura para el algoritmo de predicci�n
 	while (resultado.qos < qos_objetivo)
 	{
-		simular(&resultado, observador, telef1, telef2);
+		simular(&resultado, velocidades, observador, telef1, telef2);
 		// ALGORITMO DE PREDICCIÓN LINEALIZANDO
 		// y = mx + n
 		// m = dy/dx (delta)
@@ -89,11 +122,10 @@ int main()
 }
 //todo decidir que velocidades tendra la red interna de cada sede, por ahora supongo
 //velocidades de 100Mbps
-//todo repasar tipo de telef1, demasiado grande?
 //todo posible error: a los Routers les estoy instalando las apps que llevan los telefonos y les estoy dando direccionamiento
 //solucionar eso
 
-double simular(Punto * resultado, Observador *observador, uint32_t telef1, uint32_t telef2)
+double simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2)
 {
 	// Preparar escenario
 
