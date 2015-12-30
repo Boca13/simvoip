@@ -1,3 +1,22 @@
+/*
+Parámetros de entrada del programa:
+· Número de usuarios en sede 1
+· Número de usuarios en sede 2
+· Distintas velocidades de enlace que se pueden contratar con el operador
+· Tasa media de ocurrencia de llamadas de los usuarios
+· Calidad de servicio requerida
+· Intervalo de la tasa de bits del códec de audio.
+
+Parámetros de salida del programa:
+· Número de enlaces y velocidad a contratar con el operador.
+· Número máximo de usuarios que pueden hablar a la vez.
+· Parámetros de calidad conseguidos finalmente (retardo etc.)
+· Gráficas:
+· Una gráfica para cada número de enlaces con la evolución de la QoS respecto a la capacidad de enlace.
+· Una gráfica para cada número de enlaces con la evolución de los parámetros usados para medir la QoS según la capacidad de enlace.
+
+*/
+
 #include "ns3/core-module.h"
 #include "ns3/network-module.h"
 #include "ns3/csma-module.h"
