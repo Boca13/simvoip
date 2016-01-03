@@ -16,13 +16,28 @@ Observador::~Observador()
 }
 
 void
-Observador::PktEnviado(Pkt<Const Packet>paquete);
+Observador::PktEncolado(Pkt<Const Packet>paquete)
 {
-  t_enviado=Simulator::Now();
-  m_enviados=m_enviados++
+   t_encolado=Simulator::Now();
   uint64_t id = paquete->GetUid();
- array[id]=t_enviados
+ array[id]=t_encolado
 }
+
+
+
+
+void
+Observador::PktEnviado(Pkt<Const Packet>paquete)
+{
+  /*suponemos que el paquete está en la estructura*/
+    std::map<uint64_t,Time>::iterator aux=array.find(paquete->GetUid());
+     Time Taux =array[paquete->GetUid()]; 
+     Jitter.Update((Simulator::Now()-Taux).GetMilliSeconds());
+     m_enviados=m_enviados++
+  
+}
+
+
 
 void 
 Observador::PktRecibido(Pkt<const Packet>paquete, const Address & dir)
@@ -36,7 +51,7 @@ Observador::PktRecibido(Pkt<const Packet>paquete, const Address & dir)
         {
           NS_LOG_INFO("SI ESTA EN LA ESTRUCTURA");
           Time Taux =array[paquete->GetUid()];
-          Jitter.Update((Simulator::Now()-Taux).GetMilliSeconds());
+          Retardo.Update((Simulator::Now()-Taux).GetMilliSeconds());
           m_recibidos=m_recibidos+1;
           array.erase(aux);
         }
@@ -45,8 +60,21 @@ Observador::PktRecibido(Pkt<const Packet>paquete, const Address & dir)
 float
 Observador::QoSActual();
 {
+  
+  /*
+  modelo E 
+  QoS= (Ro − Is) − Id − Ie-eff + A 
+  jitter >= 100ms
+  retardo >= 150ms
+  % >=1
+  
+  */
   m_perdidos=array.Size();
-  m_QoS=((m_recibidos)/m_enviados)*100; //referente a paquetes perdidos
+  /* debe ser menor a  un 0.01 o un 1%*/
+  m_porcentaje=((m_perdidos)/m_enviados)*100; //referente a paquetes perdidos
+  
+  
+  m_QoS=
  return m_QoS; 
 }
 
@@ -56,11 +84,20 @@ Observador::QoSActual();
 float 
 Observador::ActualizaJitter()
 {
+  /* el jitter debe se menor de 100 ms */
   return Jitter.Mean();
+}
+
+float
+Observador::ActualizaRetardo()
+{
+  /* el retardo debe ser menor de 150ms */
+  return Retardo.Mean();
 }
 
 Void
 Observador:Reset()
 {
   Jitter.Reset();
+  Retardo.Reset();
 }
