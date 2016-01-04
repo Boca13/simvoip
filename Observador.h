@@ -1,8 +1,14 @@
-#pragma once
+/* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
 #include <ns3/packet.h>
-#include <ns3/average.h>
-
+#include "ns3/nstime.h"
+#include "ns3/average.h"
+#include "ns3/internet-module.h"
+#include "ns3/applications-module.h"
+#include "ns3/object.h"
+#include "ns3/global-value.h"
+#include "ns3/csma-module.h"
+#include "ns3/address.h"
 
 using namespace ns3;
 
@@ -10,26 +16,19 @@ using namespace ns3;
 class Observador
 {
 public:
-	Observador();
-	virtual ~Observador();
-	void PktEnviado(Ptr<Const Packet>paquete);
-	void PktRecibido(Ptr<Const Packet>paquete);
-	void PktEncolado(Ptr<Const Packet>paquete);
-	float ActualizaJitter(); /* función que actualiza el jitter cada vez que se envia*/
-	float ActualizaRetardo();/* función que actualiza el retardo */
-	float QoSActual(); /*Función que devuelvo el QoS alcanzado*/
-	void Reset(); /*bpor si tenemos que reiniciar los valores */
-	std::map<uint64_t, Time> array;
+  Observador                 ();
+  void     PaqueteEnviado    (Ptr<const Packet> paquete);
+  void     PaqueteEnviado2   (Ptr<const Packet> paquete);
+  void     PaqueteEnviado3   (Ptr<const Packet> paquete);
+  void     PaqueteEnviado4   (Ptr<const Packet> paquete);
+
 private:
-	Time t_enviado; /* time para introducir en la estructura   (se deja de utilizar)*/
-	Time t_encolado /* tiempo con el que se encola un paquete en el buffer usado para introducir en la estructura*/
-	float m_enviados;
-	float m_recibidos;
-	float m_perdidos;
-	float m_porcentaje /* variable auxiliar para el porcentaje de paquetes perdidos */
-	float m_QoS;   /* Qos que devolverá QoSActual*/
-	uint64_t m_usuarios; /* (Duda) para calcular usuarios totales hablando al mismo tiempo*/
-	Average<float>Jitter;  /* jitter del buffer */
-	Average<float>Retardo /* retardo de propagación*/
+  
+  uint64_t  m_paquetes;
+  uint64_t  m_paquetes2;
+  uint64_t  m_paquetes3;
+  uint64_t  m_paquetes4;
+
 };
+
 
