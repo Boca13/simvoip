@@ -2,8 +2,8 @@
 
 #include <ns3/packet.h>
 #include <ns3/average.h>
-#define JITTER 150 
-#define RETARDO 100
+#define JITTER 100 
+#define RETARDO 150
 #define PORCENTAJE  1
 
 using namespace ns3;
