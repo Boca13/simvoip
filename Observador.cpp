@@ -74,7 +74,7 @@ Observador::QoSActual();
   m_porcentaje=((m_perdidos)/m_enviados)*100; //referente a paquetes perdidos
   
   
-  m_QoS=
+  m_QoS=(m_porcentaje/PORCENTAJE + Jitter.mean()/JITTER + Retardo.Mean()/RETARDO)/3
  return m_QoS; 
 }
 
