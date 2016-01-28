@@ -45,7 +45,7 @@ typedef struct {
 *	Recibe el n�mero de enlaces y su velocidad y el objeto observador a utilizar
 *	devuelve la QoS conseguida
 */
-double simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2);
+double simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2, uint8_t enlaces);
 
 
 using namespace ns3;
@@ -144,80 +144,205 @@ int main(int argc, char *argv[])
 //todo posible error: a los Routers les estoy instalando las apps que llevan los telefonos y les estoy dando direccionamiento
 //solucionar eso
 
+
+/*
+ * velocidades[resultado->velocidad]; ---> velocidad que utilizo en los enlaces.
+ *
+ *
+ *
+ */
+
+
 double simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2)
 {
-	// Preparar escenario
 
-	NodeContainer Sedes;		//Creamos 2 sedes que vamos a interconectar
-	Sedes.Create(2);			//Son nodos p2p
+	Ptr<UniformRandomVariable> varon;
+	Ptr<UniformRandomVariable> varoff;
 
-	//todo supongo que
 
-	//Creo telefonos de sede 1
-	NodeContainer telefonosSede1;
-	telefonosSede1.Add( Sedes.Get(0) );
-	telefonosSede1.Create(telef1);  //Creo el numero de telefonos que se le pase por parametros
+	//primero creamos los R de salida de cada central
+	NodeContainer R;
+	R.Create(2);
+	//Estos nodos irán unidos por enlaces p2p
 
-	//Creo telefonos de sede 2
-	NodeContainer telefonosSede2;
-	telefonosSede2.Add( Sedes.Get(1) );
-	telefonosSede2.Create(telef2);
 
-	//Instalo dispositivo en Routers entre sedes
-	PointToPointHelper pointToPoint;
-	NetDeviceContainer p2pDevices;
-	pointToPoint.SetDeviceAttribute ("DataRate", StringValue ("1Gbps")); //todo supongo datos, ya se cambiara
-	pointToPoint.SetChannelAttribute ("Delay", StringValue ("0.1ms"));
-	p2pDevices = pointToPoint.Install (Sedes);
+	//Configuro la topologia p2p
+	PointToPointHelper p2p;
+	p2p.SetDeviceAttribute ("DataRate", DataRateValue (velocidades[resultado->velocidad]));
+	p2p.SetChannelAttribute ("Delay", StringValue ("2ms"));
 
-	//Instalo dispositivo en telefonos Sede 1
+	//Creo los enlaces p2p entre centrales
 
-	PointToPointHelper pointToPointSede1;
-	NetDeviceContainer p2pDevicesSede1;
-	pointToPointSede1.SetDeviceAttribute ("DataRate", StringValue ("100Mbps")); //todo supongo datos, ya se cambiara
-	pointToPointSede1.SetChannelAttribute ("Delay", StringValue ("2ms"));
-	p2pDevicesSede1 = pointToPoint.Install (telefonosSede1);
+	NetDeviceContainer Rdevices;
 
-	//Instalo dispositivo en telefonos Sede 2
+	for (uint8_t j=0;j<resultado->enlaces;j++){
 
-	PointToPointHelper pointToPointSede2;
-	NetDeviceContainer p2pDevicesSede2;
-	pointToPointSede2.SetDeviceAttribute ("DataRate", StringValue ("100Mbps")); //todo supongo datos, ya se cambiara
-	pointToPointSede2.SetChannelAttribute ("Delay", StringValue ("2ms"));
-	p2pDevicesSede2 = pointToPoint.Install (telefonosSede2);
+		NetDeviceContainer enlaceRouters = p2p.Install (NodeContainer (R.Get(0), R.Get(1) ) );
 
-	//Instalo pila TCP/IP en todos los nodos
-	 InternetStackHelper stack;
-	 stack.Install(telefonosSede1);	//todo tengo que instalar pila tcp/ip en Routers?
-	 stack.Install(telefonosSede2);
-
-	//Direccionamiento IP
-	 Ipv4AddressHelper address;
-	 Ipv4InterfaceContainer p2pInterfacesSede1;
-	 address.SetBase("10.1.1.0","255.255.0.0");
-	 p2pInterfacesSede1 = address.Assign(p2pDevicesSede1);
-	 Ipv4InterfaceContainer p2pInterfacesSede2;
-	 address.SetBase("10.1.2.0","255.255.0.0");
-	 p2pInterfacesSede2 = address.Assign(p2pDevicesSede2);
-
-	 Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
-
-	 //Establezco un sumidero de paquetes en cada telefono
-	 //Utilizamos el puerto 9 para el sumidero
-	 uint16_t port = 9;
-	 PacketSinkHelper sink ("ns3::UdpSocketFactory", Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
-	 ApplicationContainer sumidero = sink.Install(telefonosSede1);
-	 ApplicationContainer sumidero = sink.Install(telefonosSede2);
-
-	 //todo Crear aplicacion OnOff (mirar voip.cc y añadirlo a cada telefono)
+		Rdevices.Add (enlaceRouters.Get(0));
+		Rdevices.Add (enlaceRouters.Get(1));
+	}
 
 
 
 
-	// Ejecutar simulaci�n
-	 // Utilizar valores de la estructura resultado
-	 // Para obtener la velocidad: velocidades[resultado->velocidad]
+	//----Esto seria para las centrales. Ahora los telefonos/bridges
+	NodeContainer terminales1; //Sede1
+	NodeContainer terminales2; //Sede 2
+	terminales1.Create(telef1);
+	terminales2.Create(telef2);
 
-	// Calcular calidad de servicio y devolverla
-	return(1.0);
+	//Añado el R al nodecontainer de los telefonos para realizar los enlaces despues
+	terminales1.Add(R.Get(0));
+	terminales2.Add(R.Get(1));
+
+
+
+	NodeContainer Bridge1;//Sede 1
+	NodeContainer Bridge2;//Sede 2
+
+	PointToPointHelper p2pInterno;
+	p2pInterno.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
+	p2pInterno.SetChannelAttribute ("Delay", StringValue ("2ms"));
+
+	NetDeviceContainer terminales1Devices;
+	NetDeviceContainer Bridge1Devices;
+
+
+
+	for(uint16_t j=0;j<telef1+1;j++){
+		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales1.Get(j),Bridge1)  );
+		terminales1Devices.Add (enlace1.Get(0));
+		Bridge1Devices.Add (enlace1.Get(1));
+	}
+
+
+	NetDeviceContainer terminales2Devices;
+	NetDeviceContainer Bridge2Devices;
+
+	for(uint16_t j=0;j<telef2+1;j++){
+		NetDeviceContainer enlace2 = p2pInterno.Install (NodeContainer(terminales2.Get(j),Bridge2)  );
+		terminales2Devices.Add (enlace2.Get(0));
+		Bridge2Devices.Add (enlace2.Get(1));
+	}
+
+
+
+	//Una vez todos los enlaces creados, creo el bridge que conmutara paquetes
+	Ptr<Node> Puente1 = Bridge1.Get (0);
+	BridgeHelper b1;
+	b1.Install (Puente1, Bridge1Devices);
+
+	Ptr<Node> Puente2 = Bridge1.Get (0);
+	BridgeHelper b2;
+	b2.Install (Puente2, Bridge2Devices);
+
+	//Añado la pila TCP/IP a los dispositivos
+	InternetStackHelper stack;
+
+	stack.Install(R);
+	stack.Install(terminales1);
+	stack.Install(terminales2);
+
+	Ipv4AddressHelper ipv4;
+	Ipv4InterfaceContainer telefonosSede1;
+	ipv4.SetBase ("10.1.0.0","255.255.0.0");
+	telefonosSede1 = ipv4.Assign (terminales1Devices);
+
+	Ipv4AddressHelper ipv4v2;
+	Ipv4InterfaceContainer telefonosSede2;
+	ipv4v2.SetBase ("10.2.0.0","255.255.0.0");
+	telefonosSede2 = ipv4v2.Assign (terminales2Devices);
+
+
+	Ipv4AddressHelper ipv4v3;
+	Ipv4InterfaceContainer routers;
+	ipv4v3.SetBase ("10.3.0.0","255.255.255.0");
+	routers = ipv4v3.Assign (Rdevices);
+
+
+	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+	//Creo aplicacion UDP sumidero y tal.
+
+	//Establezco un sumidero de paquetes en cada telefono
+	//Utilizamos el puerto 5600 para el sumidero
+	uint16_t port = 5600;
+	PacketSinkHelper sink ("ns3::UdpSocketFactory", Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
+
+
+	ApplicationContainer sumidero1 = sink.Install(terminales1);
+	ApplicationContainer sumidero2 = sink.Install(terminales2);
+
+	//Creo aplicacion que envia paquetes ON/OFF para simular llamada voip
+
+	//Problema con direccionamiento
+
+	 OnOffHelper clientes ("ns3::UdpSocketFactory",
+		                        Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
+
+	ApplicationContainer tx1 = clientes.Install(terminales1);
+	ApplicationContainer tx2 = clientes.Install(terminales2);
+
+	#define MAXONVOIP 0.1
+	#define MINONVOIP 0.2
+	#define MAXOFFVOIP 0.8
+	#define MINOFFVOIP 0.9
+
+	varon=CreateObject<UniformRandomVariable>();
+	  varon->SetAttribute("Max", DoubleValue(MAXONVOIP));
+	  varon->SetAttribute("Min", DoubleValue(MINONVOIP));
+	  varoff=CreateObject<UniformRandomVariable>();
+	  varoff->SetAttribute("Max", DoubleValue(MAXOFFVOIP));
+	  varoff->SetAttribute("Min", DoubleValue(MINOFFVOIP));
+	  //Configuramos la aplicación OnOff
+	  clientes.SetConstantRate (DataRate ("64kbps"));
+	  clientes.SetAttribute("OnTime", PointerValue(varon));
+	  clientes.SetAttribute("OffTime", PointerValue(varoff));
+
+
+
+	//Cambio de cola de ROUTER 1 (por si hace falta)
+	PointerValue tmp;
+		 	  R.Get(0)->GetObject<NetDevice>()->GetAttribute("TxQueue",tmp);
+		 	  Ptr<Object> txQueue = tmp.GetObject();
+		 	  Ptr<DropTailQueue> dtq = txQueue->GetObject <DropTailQueue>();
+		 	  NS_ASSERT (dtq!=0);
+		 	  UintegerValue limit;
+		 	  dtq->GetAttribute("MaxPackets",limit);
+		 	  NS_LOG_INFO ("Tamaño de la cola del Router 1: "<<limit.Get()<<" paquetes" );
+		 	  dtq->SetAttribute("MaxPackets",UintegerValue(100));
+		 	  dtq->GetAttribute("MaxPackets",limit);
+		 	  NS_LOG_INFO("Tamaño de la cola del Router 1 cambiado a: "<<limit.Get()<<" paquetes");
+
+	//Cambio de cola de ROUTER 2 (por si hace falta)
+	PointerValue tmp;
+		 	  R.Get(1)->GetObject<NetDevice>()->GetAttribute("TxQueue",tmp);
+		 	  Ptr<Object> txQueue = tmp.GetObject();
+		 	  Ptr<DropTailQueue> dtq = txQueue->GetObject <DropTailQueue>();
+		 	  NS_ASSERT (dtq!=0);
+		 	  UintegerValue limit;
+		 	  dtq->GetAttribute("MaxPackets",limit);
+		 	  NS_LOG_INFO ("Tamaño de la cola del Router 2: "<<limit.Get()<<" paquetes" );
+		 	  dtq->SetAttribute("MaxPackets",UintegerValue(100));
+		 	  dtq->GetAttribute("MaxPackets",limit);
+		 	  NS_LOG_INFO("Tamaño de la cola del Router 2 cambiado a: "<<limit.Get()<<" paquetes");
+
+
+
+	//SUSCRIPCION DE TRAZAS
+
+
+
+	tx1.Start (Seconds (2.0));
+	tx2.Start (Seconds (2.0));
+	tx1.Stop (Seconds (15.0));
+	tx2.Stop (Seconds (15.0));
+
+	Simulator::Run ();
+	Simulator::Destroy ();
+
+
+
+
+
 }
