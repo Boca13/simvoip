@@ -7,14 +7,28 @@
 
 NS_LOG_COMPONENT_DEFINE ("Observador");
 
+Observador::Observador()
+{
+  NS_LOG_FUNCTION_NOARGS();
+  m_paquetes=0;
+  m_paquetes2=0;
+  m_paquetes3=0;
+  m_paquetes4=0;
+}
 
-Observador::Observador ()
+Observador::Observador(Ptr<Ipv4> uno , Ptr<Ipv4> dos)
 {
   NS_LOG_FUNCTION_NOARGS ();
   m_paquetes=0;
   m_paquetes2=0;
   m_paquetes3=0;
   m_paquetes4=0;
+  m_colaR1I1=0;
+  m_colaR1I2=0;
+  m_colaR2I1=0;
+  m_colaR2I2=0;
+  m_controla = CreateObject<ControladorTabla> (uno,dos);
+   
 }
 
 
@@ -149,3 +163,62 @@ Observador::PaqueteEnviado4 (Ptr<const Packet> paquete)
   m_paquetes4++;
    
 }
+
+
+void    
+Observador::SumaColaR1I1 (Ptr<const Packet> paquete) {
+  NS_LOG_FUNCTION_NOARGS ();
+  m_colaR1I1++;
+  if (m_colaR1I1 == 3) {
+    m_controla->cambiaEnlace2();
+    NS_LOG_INFO("Cola llena, cambio enrutamiento");
+  }
+}
+void     
+Observador::RestaColaR1I1 (Ptr<const Packet> paquete) {
+  NS_LOG_FUNCTION_NOARGS ();
+  m_colaR1I1--;
+}
+void    
+Observador::SumaColaR1I2 (Ptr<const Packet> paquete) {
+  NS_LOG_FUNCTION_NOARGS ();
+  m_colaR1I2++;
+  if (m_colaR1I2 == 3) {
+    m_controla->cambiaEnlace2();
+    NS_LOG_INFO("Limito cola superado, cambio enrutamiento");
+  }
+}
+void     
+Observador::RestaColaR1I2 (Ptr<const Packet> paquete) {
+  NS_LOG_FUNCTION_NOARGS ();
+  m_colaR1I2--;
+}
+void    
+Observador::SumaColaR2I1 (Ptr<const Packet> paquete) {
+  NS_LOG_FUNCTION_NOARGS ();
+  m_colaR2I1++;
+  if (m_colaR2I1 == 3) {
+    m_controla->cambiaEnlace2();
+    NS_LOG_INFO("Limite cola superado, cambio enrutamiento");
+  }
+}
+void     
+Observador::RestaColaR2I1 (Ptr<const Packet> paquete) {
+  NS_LOG_FUNCTION_NOARGS ();
+  m_colaR2I1--;
+}
+void    
+Observador::SumaColaR2I2 (Ptr<const Packet> paquete) {
+  NS_LOG_FUNCTION_NOARGS ();
+  m_colaR2I2++;
+  if (m_colaR2I2 == 3) {
+    m_controla->cambiaEnlace2();
+    NS_LOG_INFO("Limite cola superado, cambio enrutamiento");
+  }
+}
+void     
+Observador::RestaColaR2I2 (Ptr<const Packet> paquete) {
+  NS_LOG_FUNCTION_NOARGS ();
+  m_colaR2I2--;
+}
+  
