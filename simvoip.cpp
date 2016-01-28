@@ -103,24 +103,42 @@ int main(int argc, char *argv[])
 
 	Observador * observador = new Observador();
 	Punto anterior = { 0,0,0.0 };
-	Punto resultado;
+	Punto resultado = { 1,0,0.0 };
+	uint32_t iteraciones = 0;
 	// Los resultados de las simulaciones se guardan en una estructura para el algoritmo de predicci�n
+	NS_LOG_INFO("Comenzando simulación");
+
+	// FASE I: Acercamiento rápido.
+	// Se busca el óptimo dando grandes pasos aproximando linealmente. Cuando se supere la QoS requerida se pasará a la segunda fase.
+	NS_LOG_DEBUG("FASE I");
 	while (resultado.qos < qos_objetivo)
 	{
+		// Cuenta del tiempo que tarda la iteración
+		Time elapsed = Seconds(time(0));
+		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
+		NS_LOG_DEBUG("	Usando " << resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
+
 		simular(&resultado, velocidades, observador, telef1, telef2);
+		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
+
 		// ALGORITMO DE PREDICCIÓN LINEALIZANDO
 		// y = mx + n
 		// m = dy/dx (delta)
 		// x = enlaces*velocidad
+		NS_LOG_DEBUG("	PREDICCIÓN");
+		// Calcular pendiente de la recta
 		double m = ((resultado.qos - anterior.qos) / ((resultado.enlaces*velocidades[resultado.velocidad].GetBitRate() / 1e6) - (anterior.enlaces*velocidades[anterior.velocidad].GetBitRate() / 1e6)));
+		NS_LOG_DEBUG("	La m obtenida es " << m);
 		// qos = mx -> x = qos/m
 		uint32_t x = qos_objetivo / m;
+		NS_LOG_DEBUG("	Suponemos que la x óptima estará en torno a " << x);
 		// Pasar el resultado al anterior
 		anterior = resultado;
 		// Cambiar coordenadas de resultado para la siguiente iteración
 		// Enlaces mínimos
 		resultado.enlaces = 0;
 		resultado.velocidad = 0;
+		// Repartir la x obtenida en velocidad y número de enlaces de forma que haya el mínimo número de enlaces
 		while ((x / velocidades[resultado.velocidad].GetBitRate() / 1e6)>resultado.enlaces)
 		{
 			if (resultado.velocidad == (velocidades.size() - 1))
@@ -132,11 +150,44 @@ int main(int argc, char *argv[])
 			{
 				resultado.velocidad++;
 			}
-
 		}
 		delete observador;
+		elapsed = Seconds(time(0)) - elapsed;
+		NS_LOG_DEBUG("La iteración " << iteraciones << " ha tardado " << elapsed.GetSeconds() << " segundos.");
 	}
+	// FASE II: Descenso fino
+	// Ahora se bajan los parámetros de entrada poco a poco hasta que la QoS obtenida baja de la requerida.
+	// Cuando esto ocurra el algoritmo termina, dando como solución los parámetros de la simulación anterior.
+	NS_LOG_DEBUG("FASE II");
+	while (resultado.qos > qos_objetivo)
+	{
+		// Cuenta del tiempo que tarda la iteración
+		Time elapsed = Seconds(time(0));
+		if (resultado.velocidad == 0)
+		{
+			resultado.velocidad = (velocidades.size() - 1);
+			resultado.enlaces--;
+		}
+		else
+		{
+			resultado.velocidad--;
+		}
 
+		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
+		NS_LOG_DEBUG("	Usando " << resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
+		simular(&resultado, velocidades, observador, telef1, telef2);
+		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
+
+		// Pasar el resultado al anterior
+		anterior = resultado;
+
+		elapsed = Seconds(time(0)) - elapsed;
+		NS_LOG_DEBUG("La iteración " << iteraciones << " ha tardado " << elapsed.GetSeconds() << " segundos.");
+	}
+	// El resultado final es el de la estructura anterior
+	NS_LOG_INFO("¡Simulación finalizada!");
+	NS_LOG_INFO("La solución óptima es utilizar " << (unsigned int) anterior.enlaces << " enlaces con una tasa de " << anterior.velocidad << ".");
+	NS_LOG_INFO("Se obtiene una calidad de servicio de " << anterior.qos);
 	return 0;
 }
 //todo decidir que velocidades tendra la red interna de cada sede, por ahora supongo
