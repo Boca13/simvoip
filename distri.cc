@@ -18,7 +18,7 @@ using namespace ns3;
    
 NS_LOG_COMPONENT_DEFINE ("distri");
    
-void cambiaEnlace (Time inicio, Time fin, Time salto, Ptr<Ipv4> uno , Ptr<Ipv4> dos);
+
 
 int main (int argc, char *argv[])
 {
@@ -83,39 +83,39 @@ int main (int argc, char *argv[])
   uint16_t port = 9;   // Discard port (RFC 863)
   OnOffHelper onoff ("ns3::UdpSocketFactory",
                         InetSocketAddress (i3i4.GetAddress (1), port));
-  onoff.SetConstantRate (DataRate ("2kbps"));
+  onoff.SetConstantRate (DataRate ("2Mbps"));
   onoff.SetAttribute ("PacketSize", UintegerValue (50));
   
   ApplicationContainer apps = onoff.Install (c.Get (0));
   apps.Start (Seconds (2));
-  apps.Stop (Seconds (16.0));
+  apps.Stop (Seconds (8.0));
 
   OnOffHelper onoff2 ("ns3::UdpSocketFactory",
                         InetSocketAddress (i3i5.GetAddress (1), port));
-  onoff2.SetConstantRate (DataRate ("2kbps"));
+  onoff2.SetConstantRate (DataRate ("2Mbps"));
   onoff2.SetAttribute ("PacketSize", UintegerValue (50));
   
   ApplicationContainer apps2 = onoff2.Install (c.Get (1));
   apps2.Start (Seconds (2));
-  apps2.Stop (Seconds (16.0));
+  apps2.Stop (Seconds (8.0));
 
   OnOffHelper onoff3 ("ns3::UdpSocketFactory",
                         InetSocketAddress (i0i2.GetAddress (0), port));
-  onoff3.SetConstantRate (DataRate ("2kbps"));
+  onoff3.SetConstantRate (DataRate ("1Mbps"));
   onoff3.SetAttribute ("PacketSize", UintegerValue (50));
   
   ApplicationContainer apps3 = onoff3.Install (c.Get (4));
   apps3.Start (Seconds (2));
-  apps3.Stop (Seconds (16.0));
+  apps3.Stop (Seconds (8.0));
 
   OnOffHelper onoff4 ("ns3::UdpSocketFactory",
                         InetSocketAddress (i1i2.GetAddress (0), port));
-  onoff4.SetConstantRate (DataRate ("2kbps"));
+  onoff4.SetConstantRate (DataRate ("1Mbps"));
   onoff4.SetAttribute ("PacketSize", UintegerValue (50));
   
   ApplicationContainer apps4 = onoff4.Install (c.Get (5));
   apps4.Start (Seconds (2));
-  apps4.Stop (Seconds (16.0));
+  apps4.Stop (Seconds (8.0));
   
 
   // Create an optional packet sink to receive these packets
@@ -123,25 +123,25 @@ int main (int argc, char *argv[])
                            Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
   apps = sink.Install (c.Get (0));
   apps.Start (Seconds (1.0));
-  apps.Stop (Seconds (16.0));
+  apps.Stop (Seconds (9.0));
 
   PacketSinkHelper sink2 ("ns3::UdpSocketFactory",
                            Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
   apps2 = sink2.Install (c.Get (1));
   apps2.Start (Seconds (1.0));
-  apps2.Stop (Seconds (16.0));
+  apps2.Stop (Seconds (9.0));
 
   PacketSinkHelper sink3 ("ns3::UdpSocketFactory",
                            Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
   apps3 = sink3.Install (c.Get (4));
   apps3.Start (Seconds (1.0));
-  apps3.Stop (Seconds (16.0));
+  apps3.Stop (Seconds (9.0));
   
   PacketSinkHelper sink4 ("ns3::UdpSocketFactory",
                            Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
   apps4 = sink4.Install (c.Get (5));
   apps4.Start (Seconds (1.0));
-  apps4.Stop (Seconds (16.0));
+  apps4.Stop (Seconds (9.0));
  
   AsciiTraceHelper ascii;
   Ptr<OutputStreamWrapper> stream = ascii.CreateFileStream ("dynamic-global-routing.tr");
@@ -155,8 +155,12 @@ int main (int argc, char *argv[])
 
   Ptr<Node> n3 = c.Get (3);
   Ptr<Ipv4> ipv43 = n3->GetObject<Ipv4> ();
-
-  cambiaEnlace(Time("2s"), Time("16s"), Time("1s"), ipv42, ipv43);
+  
+  /* Caso cambio dinamico
+    ControladorTabla controlador = ControladorTabla(ipv42,ipv43);
+    controlador.cambiaEnlace(Time("2s"), Time("9s"), Time("1s"), ipv42, ipv43);
+    Observador = Observador();
+  */
 
   // Trace routing tables 
   Ipv4GlobalRoutingHelper g;
@@ -166,11 +170,34 @@ int main (int argc, char *argv[])
   g.PrintRoutingTableAllAt (Seconds (6), routingStream2);
    
   // SUSCRIPCION TRAZAS
-  Observador observador = Observador();
+  Observador observador = Observador(ipv42,ipv43);
   d2d3.Get(1)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext ("MacRx", MakeCallback(&Observador::PaqueteEnviado, &observador));
   d2d3v2.Get(1)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext ("MacRx", MakeCallback(&Observador::PaqueteEnviado2, &observador));
   d2d3.Get(0)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext ("MacRx", MakeCallback(&Observador::PaqueteEnviado3, &observador));
   d2d3v2.Get(0)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext ("MacRx", MakeCallback(&Observador::PaqueteEnviado4, &observador));
+
+  // SUSCRIPCION TRAZAS COLA 
+  PointerValue puntero ;
+  d2d3.Get(1)->GetAttribute("TxQueue", puntero);
+  Ptr<Object>  objeto = puntero.GetObject();
+  Ptr<DropTailQueue> cola = objeto->GetObject<DropTailQueue>();
+  cola->TraceConnectWithoutContext ("Enqueue", MakeCallback(&Observador::SumaColaR1I1,&observador));
+  cola->TraceConnectWithoutContext ("Dequeue", MakeCallback(&Observador::RestaColaR1I1,&observador));
+  d2d3v2.Get(1)->GetAttribute("TxQueue", puntero);
+  objeto = puntero.GetObject();
+  cola = objeto->GetObject<DropTailQueue>();
+  cola->TraceConnectWithoutContext ("Enqueue", MakeCallback(&Observador::SumaColaR1I2,&observador));
+  cola->TraceConnectWithoutContext ("Dequeue", MakeCallback(&Observador::RestaColaR1I2,&observador));
+  d2d3.Get(0)->GetAttribute("TxQueue", puntero);
+  objeto = puntero.GetObject();
+  cola = objeto->GetObject<DropTailQueue>();
+  cola->TraceConnectWithoutContext ("Enqueue", MakeCallback(&Observador::SumaColaR2I1,&observador));
+  cola->TraceConnectWithoutContext ("Dequeue", MakeCallback(&Observador::RestaColaR2I1,&observador));
+  d2d3v2.Get(0)->GetAttribute("TxQueue", puntero);
+  objeto = puntero.GetObject();
+  cola = objeto->GetObject<DropTailQueue>();
+  cola->TraceConnectWithoutContext ("Enqueue", MakeCallback(&Observador::SumaColaR2I2,&observador));
+  cola->TraceConnectWithoutContext ("Dequeue", MakeCallback(&Observador::RestaColaR2I2,&observador));
 
   NS_LOG_INFO ("Run Simulation.");
   Simulator::Run ();
@@ -179,29 +206,3 @@ int main (int argc, char *argv[])
 
 }
 
-void cambiaEnlace (Time inicio, Time fin, Time salto, Ptr<Ipv4> uno , Ptr<Ipv4> dos) {
-  
-  // The first ifIndex is 0 for loopback, then the first p2p is numbered 1, etc.
-  //uint32_t if1 = 1;
-  //uint32_t if2 = 2;
-  uint32_t if3 = 3;
-  uint32_t if4 = 4;
-  Time actual = inicio;
-  uint16_t metrica = 0;
-
-  while (actual.GetSeconds() < fin.GetSeconds() ) {
-    Simulator::Schedule (actual-Seconds(0.001),&Ipv4::SetMetric, uno, if3, 1-metrica);
-    Simulator::Schedule (actual-Seconds(0.001),&Ipv4::SetMetric, uno, if4, metrica);
-  
-    Simulator::Schedule (actual-Seconds(0.001),&Ipv4::SetMetric, dos, if3, 1-metrica);
-    Simulator::Schedule (actual-Seconds(0.001),&Ipv4::SetMetric, dos, if4, metrica);  
-  
-    Simulator::Schedule (actual, &Ipv4GlobalRoutingHelper::RecomputeRoutingTables);
-    actual = actual + salto;
-  
-    if (metrica == 0)
-      metrica = 1;
-    else
-      metrica = 0;
-  }
-}
