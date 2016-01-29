@@ -255,7 +255,9 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 
 	NodeContainer Bridge1;//Sede 1
+	Bridge1.Create(1);
 	NodeContainer Bridge2;//Sede 2
+	Bridge2.Create(1);
 
 	PointToPointHelper p2pInterno;
 	p2pInterno.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
@@ -265,9 +267,9 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	NetDeviceContainer Bridge1Devices;
 
 
-
-	for(uint16_t j=0;j<telef1+1;j++){
-		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales1.Get(j),Bridge1)  );
+	//Uso telef1+1 porque hemos añadido al NodeContainer de los terminales1 el R.Get(0)
+	for(uint16_t j=0;j<=telef1;j++){
+		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales1.Get (j) ,Bridge1)  );
 		terminales1Devices.Add (enlace1.Get(0));
 		Bridge1Devices.Add (enlace1.Get(1));
 	}
@@ -275,28 +277,33 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	NetDeviceContainer terminales2Devices;
 	NetDeviceContainer Bridge2Devices;
-
-	for(uint16_t j=0;j<telef2+1;j++){
-		NetDeviceContainer enlace2 = p2pInterno.Install (NodeContainer(terminales2.Get(j),Bridge2)  );
-		terminales2Devices.Add (enlace2.Get(0));
-		Bridge2Devices.Add (enlace2.Get(1));
+	//Uso telef1+1 porque hemos añadido al NodeContainer de los terminales2 el R.Get(1)
+	for(uint16_t j=0;j<=telef2;j++){
+		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales2.Get(j),Bridge2)  );
+		terminales2Devices.Add (enlace1.Get(0));
+		Bridge2Devices.Add (enlace1.Get(1));
 	}
 
 
 
-	//Una vez todos los enlaces creados, creo el bridge que conmutara paquetes
-	Ptr<Node> Puente1 = Bridge1.Get (0);
-	BridgeHelper b1;
-	b1.Install (Puente1, Bridge1Devices);
 
-	Ptr<Node> Puente2 = Bridge1.Get (0);
+
+
+
+	//Una vez todos los enlaces creados, instalo el bridge que conmuta paquetes.
+	
+	Ptr<Node> puente1 = Bridge1.Get(0);
+	BridgeHelper b1;
+	b1.Install (puente1, Bridge1Devices);
+
+	Ptr<Node> puente2 = Bridge2.Get(0);
 	BridgeHelper b2;
-	b2.Install (Puente2, Bridge2Devices);
+	b2.Install (puente2, Bridge2Devices);
 
 	//Añado la pila TCP/IP a los dispositivos
 	InternetStackHelper stack;
 
-	stack.Install(R);
+	//stack.Install(R); R.get(0) y R.get(1) estan incluidos en terminales, quizas esta linea sobre
 	stack.Install(terminales1);
 	stack.Install(terminales2);
 
