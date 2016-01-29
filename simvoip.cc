@@ -317,28 +317,9 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	ApplicationContainer sumidero1 = sink.Install(terminales1);
 	ApplicationContainer sumidero2 = sink.Install(terminales2);
 
-	//Creo aplicacion que envia paquetes ON/OFF para simular llamada voip
-
-	//Problema con direccionamiento
-
-	 OnOffHelper clientes ("ns3::UdpSocketFactory",
-		                        Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
-
-	ApplicationContainer tx1 = clientes.Install(terminales1);
-	ApplicationContainer tx2 = clientes.Install(terminales2);
+	//Aplicacion que envia paquetes.
 
 	
-
-	varon=CreateObject<UniformRandomVariable>();
-	  varon->SetAttribute("Max", DoubleValue(MAXONVOIP));
-	  varon->SetAttribute("Min", DoubleValue(MINONVOIP));
-	  varoff=CreateObject<UniformRandomVariable>();
-	  varoff->SetAttribute("Max", DoubleValue(MAXOFFVOIP));
-	  varoff->SetAttribute("Min", DoubleValue(MINOFFVOIP));
-	  //Configuramos la aplicación OnOff
-	  clientes.SetConstantRate (DataRate ("64kbps"));
-	  clientes.SetAttribute("OnTime", PointerValue(varon));
-	  clientes.SetAttribute("OffTime", PointerValue(varoff));
 
 
 
