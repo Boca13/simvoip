@@ -253,75 +253,53 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	terminales2.Add(R.Get(1));
 
 
-
-	NodeContainer Bridge1;//Sede 1
-	Bridge1.Create(1);
-	NodeContainer Bridge2;//Sede 2
-	Bridge2.Create(1);
-
 	PointToPointHelper p2pInterno;
 	p2pInterno.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
 	p2pInterno.SetChannelAttribute ("Delay", StringValue ("2ms"));
 
-	NetDeviceContainer terminales1Devices;
-	NetDeviceContainer Bridge1Devices;
+	NetDeviceContainer R1Devices;
+
+	for(uint16_t j=0;j<telef1;j++){
+		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales1.Get (j) ,R.Get(0))  );
+		R1Devices.Add (enlace1.Get(0));
+		R1Devices.Add (enlace1.Get(1));
+	} //Estoy conectando cada telefono al R1
 
 
-	//Uso telef1+1 porque hemos añadido al NodeContainer de los terminales1 el R.Get(0)
-	for(uint16_t j=0;j<=telef1;j++){
-		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales1.Get (j) ,Bridge1)  );
-		terminales1Devices.Add (enlace1.Get(0));
-		Bridge1Devices.Add (enlace1.Get(1));
-	}
-
-
-	NetDeviceContainer terminales2Devices;
-	NetDeviceContainer Bridge2Devices;
-	//Uso telef1+1 porque hemos añadido al NodeContainer de los terminales2 el R.Get(1)
-	for(uint16_t j=0;j<=telef2;j++){
-		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales2.Get(j),Bridge2)  );
-		terminales2Devices.Add (enlace1.Get(0));
-		Bridge2Devices.Add (enlace1.Get(1));
-	}
-
-
-
-
-
-
-
-	//Una vez todos los enlaces creados, instalo el bridge que conmuta paquetes.
 	
-	Ptr<Node> puente1 = Bridge1.Get(0);
-	BridgeHelper b1;
-	b1.Install (puente1, Bridge1Devices);
+	NetDeviceContainer R2Devices;
+	
+	for(uint16_t j=0;j<=telef2;j++){
+		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales2.Get(j),R.Get(1))  );
+		R2Devices.Add (enlace1.Get(0));
+		R2Devices.Add (enlace1.Get(1));
+	}
 
-	Ptr<Node> puente2 = Bridge2.Get(0);
-	BridgeHelper b2;
-	b2.Install (puente2, Bridge2Devices);
+	
 
 	//Añado la pila TCP/IP a los dispositivos
 	InternetStackHelper stack;
 
-	//stack.Install(R); R.get(0) y R.get(1) estan incluidos en terminales, quizas esta linea sobre
+
+	//no instalo pila de internet a routers, ya están incluidos en terminales1/2
 	stack.Install(terminales1);
 	stack.Install(terminales2);
 
 	Ipv4AddressHelper ipv4;
 	Ipv4InterfaceContainer telefonosSede1;
 	ipv4.SetBase ("10.1.0.0","255.255.0.0");
-	telefonosSede1 = ipv4.Assign (terminales1Devices);
+	telefonosSede1 = ipv4.Assign (R1Devices);
 
-	Ipv4AddressHelper ipv4v2;
+	
 	Ipv4InterfaceContainer telefonosSede2;
-	ipv4v2.SetBase ("10.2.0.0","255.255.0.0");
-	telefonosSede2 = ipv4v2.Assign (terminales2Devices);
+	ipv4.SetBase ("10.2.0.0","255.255.0.0");
+	telefonosSede2 = ipv4.Assign (R2Devices);
 
 
-	Ipv4AddressHelper ipv4v3;
+	
 	Ipv4InterfaceContainer routers;
-	ipv4v3.SetBase ("10.3.0.0","255.255.255.0");
-	routers = ipv4v3.Assign (Rdevices);
+	ipv4.SetBase ("10.3.0.0","255.255.255.0");
+	routers = ipv4.Assign (Rdevices);
 
 
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
@@ -363,30 +341,26 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	//Cambio de cola de ROUTER 1 (por si hace falta)
 	PointerValue tmp;
-		 	  R.Get(0)->GetObject<NetDevice>()->GetAttribute("TxQueue",tmp);
-		 	  Ptr<Object> txQueue = tmp.GetObject();
-		 	  Ptr<DropTailQueue> dtq = txQueue->GetObject <DropTailQueue>();
-		 	  NS_ASSERT (dtq!=0);
-		 	  UintegerValue limit;
-		 	  dtq->GetAttribute("MaxPackets",limit);
-		 	  NS_LOG_INFO ("Tamaño de la cola del Router 1: "<<limit.Get()<<" paquetes" );
-		 	  dtq->SetAttribute("MaxPackets",UintegerValue(100));
-		 	  dtq->GetAttribute("MaxPackets",limit);
-		 	  NS_LOG_INFO("Tamaño de la cola del Router 1 cambiado a: "<<limit.Get()<<" paquetes");
+	Rdevices.Get(0)->GetObject<NetDevice>()->GetAttribute("TxQueue",tmp);
+	Ptr<Object> txQueue = tmp.GetObject();
+	Ptr<DropTailQueue> dtq = txQueue->GetObject <DropTailQueue>();
+	NS_ASSERT (dtq!=0);
+	UintegerValue limit;
+	dtq->GetAttribute("MaxPackets",limit);
+	NS_LOG_INFO ("Tamaño de la cola del Router 1: "<<limit.Get()<<" paquetes" );
+	dtq->SetAttribute("MaxPackets",UintegerValue(5));
+	dtq->GetAttribute("MaxPackets",limit);
+	NS_LOG_INFO("Tamaño de la cola del Router 1 cambiado a: "<<limit.Get()<<" paquetes");
 
-	//Cambio de cola de ROUTER 2 (por si hace falta)
-	PointerValue tmp2;
-		 	  R.Get(1)->GetObject<NetDevice>()->GetAttribute("TxQueue",tmp2);
-		 	  Ptr<Object> txQueue2 = tmp2.GetObject();
-		 	  Ptr<DropTailQueue> dtq2 = txQueue->GetObject <DropTailQueue>();
-		 	  NS_ASSERT (dtq2!=0);
-		 	  UintegerValue limit2;
-		 	  dtq2->GetAttribute("MaxPackets",limit2);
-		 	  NS_LOG_INFO ("Tamaño de la cola del Router 2: "<<limit2.Get()<<" paquetes" );
-		 	  dtq2->SetAttribute("MaxPackets",UintegerValue(100));
-		 	  dtq2->GetAttribute("MaxPackets",limit2);
-		 	  NS_LOG_INFO("Tamaño de la cola del Router 2 cambiado a: "<<limit2.Get()<<" paquetes");
-
+	Rdevices.Get(1)->GetObject<NetDevice>()->GetAttribute("TxQueue",tmp);
+	txQueue = tmp.GetObject();
+	dtq = txQueue->GetObject <DropTailQueue>();
+	NS_ASSERT (dtq!=0);
+	dtq->GetAttribute("MaxPackets",limit);
+	NS_LOG_INFO ("Tamaño de la cola del Router 2: "<<limit.Get()<<" paquetes" );
+	dtq->SetAttribute("MaxPackets",UintegerValue(5));
+	dtq->GetAttribute("MaxPackets",limit);
+	NS_LOG_INFO("Tamaño de la cola del Router 2 cambiado a: "<<limit.Get()<<" paquetes");
 
 
 	//SUSCRIPCION DE TRAZAS
