@@ -51,7 +51,7 @@ typedef struct {
 *	devuelve la QoS conseguida
 */
 void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2);
-
+void cambiaEnlace(Time inicio, Time fin, Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz);
 
 using namespace ns3;
 
@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
 
 	Observador * observador = new Observador();
 	Punto anterior = { 0,0,0.0 };
-	Punto resultado = { 1,0,0.0 };
+	Punto resultado = { 3,0,0.0 };
 	uint32_t iteraciones = 0;
 	// Los resultados de las simulaciones se guardan en una estructura para el algoritmo de predicci�n
 	NS_LOG_INFO("Comenzando simulación");
@@ -238,8 +238,11 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 		Rdevices.Add (enlaceRouters.Get(0));
 		Rdevices.Add (enlaceRouters.Get(1));
 	}
+		//En los netdevices 0-2-4...van los enlaces del Router 1
+		//En los netdevices 1-3-5... van los enlaces del Router 2
 
 
+	std::cout << "En Rdevices tengo: "<<Rdevices.GetN() / 2 << "enlaces" << std::endl;
 
 
 	//----Esto seria para las centrales. Ahora los telefonos/bridges
@@ -265,17 +268,17 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 		R1Devices.Add (enlace1.Get(1));
 	} //Estoy conectando cada telefono al R1
 
-
+	std::cout << "En R1devices tengo: "<<R1Devices.GetN() / 2<< "enlaces" << std::endl;
 	
 	NetDeviceContainer R2Devices;
 	
-	for(uint16_t j=0;j<=telef2;j++){
+	for(uint16_t j=0;j<telef2;j++){
 		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales2.Get(j),R.Get(1))  );
 		R2Devices.Add (enlace1.Get(0));
 		R2Devices.Add (enlace1.Get(1));
 	}
 
-	
+	std::cout << "En R2devices tengo: "<<R2Devices.GetN()/ 2 << "enlaces" << std::endl;
 
 	//Añado la pila TCP/IP a los dispositivos
 	InternetStackHelper stack;
@@ -363,6 +366,15 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	NS_LOG_INFO("Tamaño de la cola del Router 2 cambiado a: "<<limit.Get()<<" paquetes");
 
 
+	//Configuracion del cambio de enlace
+	Ptr <Node> n1 = R.Get(0);
+		Ptr<Ipv4> punteroIp1 = n1->GetObject<Ipv4> ();
+	Ptr <Node> n2 = R.Get(1);
+		Ptr<Ipv4> punteroIp2 = n2->GetObject<Ipv4> ();
+
+	 cambiaEnlace (Time("2s") ,  Time ("20s") , Time ("1s") , punteroIp1, punteroIp2, resultado->enlaces);
+
+
 	//SUSCRIPCION DE TRAZAS
 
 
@@ -375,8 +387,45 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	Simulator::Run ();
 	Simulator::Destroy ();
 
+}
+
+	
 
 
+void cambiaEnlace(Time inicio, Time fin, Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz){
+
+	uint8_t metrica = interfaz;
+	Time actual = inicio;
+
+	while (actual.GetSeconds() < fin.GetSeconds()){ //Bucle donde programo el cambio de enlaces en la simulacion. Utilizare time inicio, fin..
+
+		for (uint8_t j = 0; j < interfaz; j++){ //Bucle de los enlaces 
+				//schedule (tiempoEnElQuePasara, Dir.Objeto, PtrIpv4, Ifaz, Metrica)
+
+			//Para R1 configuro los schedules con los cambios de metrica de enlaces
+			Simulator::Schedule (actual-Seconds(0.001),&Ipv4::SetMetric, R1, j, metrica); //enlaces de R1
+
+			Simulator::Schedule (actual-Seconds(0.001),&Ipv4::SetMetric, R2, j, metrica); //enlaces de R2
+
+			
+			metrica++;
+				if(metrica >= 8)
+					metrica=0;
+
+			
+		}
+			//Cuando cambio todas las metricas, recalculo las tablas de enrutamiento
+			Simulator::Schedule (actual, &Ipv4GlobalRoutingHelper::RecomputeRoutingTables);
+
+			//Meto el salto de tiempo
+			actual = actual + salto;
+
+
+	} 
 
 
 }
+
+
+
+
