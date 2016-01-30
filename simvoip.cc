@@ -51,7 +51,7 @@ typedef struct {
 *	devuelve la QoS conseguida
 */
 void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2);
-void cambiaEnlace(Time inicio, Time fin, Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz);
+void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz);
 
 using namespace ns3;
 
@@ -319,7 +319,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	//Creo aplicacion que envia paquetes ON/OFF para simular llamada voip
 
-	//Problema con direccionamiento
+	
 
 	 OnOffHelper clientes ("ns3::UdpSocketFactory",
 		                        Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
@@ -372,7 +372,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	Ptr <Node> n2 = R.Get(1);
 		Ptr<Ipv4> punteroIp2 = n2->GetObject<Ipv4> ();
 
-	 cambiaEnlace (Time("2s") ,  Time ("20s") , Time ("1s") , punteroIp1, punteroIp2, resultado->enlaces);
+	 cambiaEnlace (Time ("1s") , punteroIp1, punteroIp2, resultado->enlaces);
 
 
 	//SUSCRIPCION DE TRAZAS
@@ -394,36 +394,35 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	
 
 
-void cambiaEnlace(Time inicio, Time fin, Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz){
+void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz){
 
 	uint8_t metrica = interfaz;
-	Time actual = inicio;
 
-	while (actual.GetSeconds() < fin.GetSeconds()){ //Bucle donde programo el cambio de enlaces en la simulacion. Utilizare time inicio, fin..
+	
 
 		for (uint8_t j = 0; j < interfaz; j++){ //Bucle de los enlaces 
 				//schedule (tiempoEnElQuePasara, Dir.Objeto, PtrIpv4, Ifaz, Metrica)
 
 			//Para R1 configuro los schedules con los cambios de metrica de enlaces
-			Simulator::Schedule (actual-Seconds(0.001),&Ipv4::SetMetric, R1, j, metrica); //enlaces de R1
+			R1->SetMetric(j, metrica); //enlaces de R1
 
-			Simulator::Schedule (actual-Seconds(0.001),&Ipv4::SetMetric, R2, j, metrica); //enlaces de R2
+			R2->SetMetric(j, metrica); //enlaces de R2
 
 			
 			metrica++;
-				if(metrica >= 8)
+				if(metrica >= interfaz)
 					metrica=0;
 
-			
-		}
-			//Cuando cambio todas las metricas, recalculo las tablas de enrutamiento
-			Simulator::Schedule (actual, &Ipv4GlobalRoutingHelper::RecomputeRoutingTables);
+	} 
+
+		//Cuando cambio todas las metricas, recalculo las tablas de enrutamiento
+			Ipv4GlobalRoutingHelper::RecomputeRoutingTables();
 
 			//Meto el salto de tiempo
-			actual = actual + salto;
-
-
-	} 
+			
+			//Arreglar esta linea
+			Simulator::Schedule (salto, NULL, cambiaEnlace, salto, R1, R2, interfaz);
+			
 
 
 }
