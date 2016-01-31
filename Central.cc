@@ -12,7 +12,7 @@ Central::~Central()
 {
 }
 
-int32_t Central::llamar(uint32_t llamante)
+Address Central::llamar(uint32_t llamante, Time duracion)
 {
 	ns3::UniformRandomVariable rnd;
 	// Se escoge aleatoriamente un número al que llamar
@@ -21,16 +21,24 @@ int32_t Central::llamar(uint32_t llamante)
 	if (llamadas.find(llamado)==llamadas.end)
 	{
 		llamadas.insert(std::pair<uint32_t, uint32_t>(llamante, llamado));
-		return llamado;
+		Simulator::Schedule(duracion, this, colgar, llamante);
+		return telefonos[llamado];
 	}
 	else // Si se encontró, está ocupado y no se produce la llamada
 	{
-		return -1;
+		return Address(); // Devolver dirección inválida
 	}
 }
 
 void Central::colgar(uint32_t llamante)
 {
 	llamadas.erase(llamante);
+}
+
+uint32_t Central::registrar(Address llamante)
+{
+	uint32_t indice = telefonos.count;
+	telefonos.insert(std::pair<uint32_t, Address>(telefonos.count, llamante));
+	return indice;
 }
 
