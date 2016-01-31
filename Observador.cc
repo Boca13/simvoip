@@ -1,4 +1,4 @@
-#include "Observador.h"
+﻿#include "Observador.h"
 
 NS_LOG_COMPONENT_DEFINE ("Observador");
 Observador::Observador()
@@ -7,7 +7,7 @@ Observador::Observador()
   m_recibidos=0;
   m_perdidos=0;
   m_QoS=0;
-  m_usuarios=0;
+  m_usuarios=0; 
 }
 
 
@@ -15,25 +15,18 @@ Observador::~Observador()
 {
 }
 
-void
-Observador::PktEncolado(Ptr<const Packet>paquete)
-{
-   t_encolado=Simulator::Now();
-  uint64_t id = paquete->GetUid();
- array[id]=t_encolado;
-}
-
-
 
 
 void
 Observador::PktEnviado(Ptr<const Packet>paquete)
 {
   /*suponemos que el paquete está en la estructura*/
-    std::map<uint64_t,Time>::iterator aux=array.find(paquete->GetUid());
-     Time Taux =array[paquete->GetUid()]; 
-     Jitter.Update((Simulator::Now()-Taux).GetMilliSeconds());
-     m_enviados++;
+
+
+  	t_encolado=Simulator::Now();
+ 	uint64_t id = paquete->GetUid();
+ 	array[id]=t_encolado;
+	m_enviados++;
   
 }
 
@@ -50,9 +43,17 @@ Observador::PktRecibido(Ptr<const Packet>paquete, const Address & dir)
       else
         {
           NS_LOG_INFO("SI ESTA EN LA ESTRUCTURA");
+
+
           Time Taux =array[paquete->GetUid()];
-          Retardo.Update((Simulator::Now()-Taux).GetMilliSeconds());
+	  Time Ahora = Simulator:Now();
+          Retardo.Update((Ahora-Taux).GetMilliSeconds());
+
+	if(t_TiempoPaqueteAnterior != 0)
+	  Jitter.Update(((Ahora-Taux)-t_TiempoPaqueteAnterior).GetMilliSeconds());
+
           m_recibidos=m_recibidos+1;
+	  t_TiempoPaqueteAnterior=(Ahora-Taux).GetMilliSeconds();
           array.erase(aux);
         }
 }
