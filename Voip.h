@@ -1,6 +1,6 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
 
-#include "centralita.h"
+#include "Central.h"
 #include "ns3/address.h"
 #include "ns3/application.h"
 #include "ns3/event-id.h"
@@ -18,16 +18,15 @@ using namespace ns3;
   class voip : public Application
   {
     public:
-      static TypeId GetTypeId (void);
    
       // Constructor de la clase, incializa Parametros: m-central=central, m_ocupado=false, m_tasa=tasa,
       // m_tamPaquete = tamanio, m_timepo = tiempo, etc.
-      voip (Ptr<Centralita> central, uint64_t tamPkt, DataRate tasa, Ptr<RandomVariableStream> tiempo);
+      voip (Central * centralita, uint64_t tamPkt, DataRate tasa, Time media, Time duracion, DataRate tasaCodec[2], Address IP,Ptr<Node> node );
 
-      void setTasa       (DataRate m_tasa);
+
       void setDestino    (Address destino);
       void setTamPaquete (uint64_t tamPaquete);
-      void setTiempo     (Ptr<RandomVariableStream> tiempo);
+      //void setTiempo     (Ptr<RandomVariableStream> tiempo);
       bool getOcupado();
    
     private:
@@ -66,17 +65,23 @@ using namespace ns3;
       
       Address         m_destino;         
       bool            m_ocupado;            // Indica si el terminal esta ocupado.
-      DataRate        m_tasa;
       uint64_t        m_tamPaquete;     
-      Ptr<Centralita> m_centralita;          
+      Central *		  m_centralita;
       EventId         m_proximallamada;     // Para poder cancelarla.
       EventId         m_llamadaactual;      // Para poder cancelarla.  
-      TypeId          m_tid;                
-      Ptr<RandomVariableStream> m_tiempo;   // Tiempo medio entre llamadas  
-      Ptr<RandomVariableStream> m_duracion; // Duracion de la llamada.
-      Ptr<OnOffApplication> m_onoff;
+      Time			  m_duracion; // Duracion de la llamada.
+      Address		  m_IP;
+      UniformRandomVariable tiempo_entre_llamadas;
+      UniformRandomVariable duracion_de_llamada;
+      UniformRandomVariable tasa_llamadas;
+      uint32_t		 	m_tasa;
       Ptr<UniformRandomVariable> varon;
-       Ptr<UniformRandomVariable> varoff;
+      Ptr<UniformRandomVariable> varoff;
+      Ptr<Node>      	m_node;
+      OnOffHelper  		m_AppOnOff;
+      uint32_t 			m_numeroNodo;
+      ApplicationContainer m_appc;
+
     
   };
    

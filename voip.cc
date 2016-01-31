@@ -1,13 +1,4 @@
 #include "voip.h"
-
-//#include "centralita.h"
-#include "ns3/address.h"
-#include "ns3/application.h"
-#include "ns3/event-id.h"
-#include "ns3/ptr.h"
-#include "ns3/data-rate.h"
-#include "ns3/onoff-application.h"
-#include "voip.h"
     
 using namespace ns3;
 #define MAXONVOIP 0.1
@@ -17,45 +8,39 @@ using namespace ns3;
 
 
 
-voip::voip (Ptr<Centralita> central, uint64_t tamPkt, DataRate tasa, Ptr<RandomVariableStream> tiempo){
+voip::voip (Central * centralita, uint64_t tamPkt, DataRate tasa, Time media, Time duracion, DataRate tasaCodec[2], Address IP, Ptr<Node> node){
 
-	
+	m_centralita = centralita;
+	m_ocupado = false;
+	m_tamPaquete = tamPkt;
+	tiempo_entre_llamadas.SetAttribute("Mean",DoubleValue(media.GetSeconds()) );
+	duracion_de_llamada.SetAttribute("Mean", DoubleValue (duracion.GetSeconds()));
+    uint32_t minTasa = tasaCodec[0].GetBitRate();
+    uint32_t maxTasa = tasaCodec[1].GetBitRate();
+    m_tasa = tasa_llamadas.GetValue(minTasa,maxTasa);
+    m_IP = IP;
+    m_node = node;
+    m_numeroNodo = registrar (m_IP);
 
 }
+
 
 
 
 void
-voip::setTasa (DataRate m_tasa){
+voip::setDestino (Address destino){
 
-
+	m_destino = destino;
 }
 
 
 void
-voip::setDestino    (Address destino){
+voip::setTamPaquete (uint64_t tamPkt){
 
-
-
-
-}
-
-
-void
-voip::setTamPaquete (uint64_t tamPaquete){
-
-
-
+	m_tamPaquete = tamPkt;
 
 }
-void
-voip::setTiempo (Ptr<RandomVariableStream> tiempo){
 
-m_tiempo = tiempo;
-
-
-
-}
 
 
 bool
@@ -71,7 +56,7 @@ Simulator::Cancel(m_proximallamada);
 
 void voip::ProgramaLlamada (){
 
-Simulator::Schedule (m_tiempo, NULL, Llama ); //m_tiempo no es tipo Time, falla
+	m_proximallamada=Simulator::Schedule (Time (tiempo_entre_llamadas.GetValue()) , this, Llama ); //m_tiempo no es tipo Time, falla
 
 }
 
@@ -81,23 +66,40 @@ void
 voip::Llama (){
 
 	//Me pongo en contacto con la centralita
+	m_ocupado=true;
+	m_llamadaactual = m_proximallamada;
+	m_duracion = duracion_de_llamada.GetValue();
 
+		Address direccion_envio = llamar ( m_IP, m_duracion);
 
 	//Configuro OnOff?
 
+		m_AppOnOff = OnOffHelper("ns3::UdpSocketFactory", direccion_envio);
 
-	varon=CreateObject<UniformRandomVariable>();
+		m_AppOnOff.SetConstantRate (DataRate( m_tasa) );
+		m_AppOnOff.SetAttribute("PacketSize",UintegerValue( m_tamPaquete) );
+
+
+
+
+	  varon=CreateObject<UniformRandomVariable>();
 	  varon->SetAttribute("Max", DoubleValue(MAXONVOIP));
 	  varon->SetAttribute("Min", DoubleValue(MINONVOIP));
+
 	  varoff=CreateObject<UniformRandomVariable>();
 	  varoff->SetAttribute("Max", DoubleValue(MAXOFFVOIP));
 	  varoff->SetAttribute("Min", DoubleValue(MINOFFVOIP));
 	  //Configuramos la aplicación OnOff
-	  SetConstantRate (DataRate ("500kbps"));
-	  SetAttribute("OnTime", PointerValue(varon));
-	  SetAttribute("OffTime", PointerValue(varoff));
+
+	  m_AppOnOff.SetAttribute("OnTime", PointerValue(varon));
+	  m_AppOnOff.SetAttribute("OffTime", PointerValue(varoff));
 
 
+
+
+	  m_appc = m_AppOnOff.Install(m_node); //Pasarle por parametro al puntero al nodo.
+	  m_appc.Start(Simulator::Now());
+	  Simulator::Schedule (Simulator::Now()+m_duracion,this, Cuelga);
 
 }
 
@@ -107,8 +109,8 @@ void
 voip::Cuelga(){
 
 	//llamo al OnOffStopApplication
-
-
+	m_appc.Stop(Simulator::Now());
+	m_ocupado=0;
 	//Llamo a programallamada
 	ProgramaLlamada();
 
@@ -119,7 +121,31 @@ void voip::Descuelga(Address destino, Time duracion){
 
 	CancelaLlamada();
 
-	//ConfiguroOnOffApplication
 
+	m_AppOnOff = OnOffHelper("ns3::UdpSocketFactory", direccion_envio);
+
+			m_AppOnOff.SetConstantRate (DataRate( m_tasa) );
+
+
+
+
+		  varon=CreateObject<UniformRandomVariable>();
+		  varon->SetAttribute("Max", DoubleValue(MAXONVOIP));
+		  varon->SetAttribute("Min", DoubleValue(MINONVOIP));
+
+		  varoff=CreateObject<UniformRandomVariable>();
+		  varoff->SetAttribute("Max", DoubleValue(MAXOFFVOIP));
+		  varoff->SetAttribute("Min", DoubleValue(MINOFFVOIP));
+		  //Configuramos la aplicación OnOff
+
+		  m_AppOnOff.SetAttribute("OnTime", PointerValue(varon));
+		  m_AppOnOff.SetAttribute("OffTime", PointerValue(varoff));
+
+
+
+
+		  m_appc = m_AppOnOff.Install(m_node); //Pasarle por parametro al puntero al nodo.
+		  m_appc.Start(Simulator::Now());
+		  Simulator::Schedule (Simulator::Now()+m_duracion,this, Cuelga);
 
 }
