@@ -8,7 +8,7 @@
 #include "ns3/data-rate.h"
 #include "ns3/onoff-application.h"
     
-namespace ns3 {
+using namespace ns3;
  
   class Address;
   class RandomVariableStream;
@@ -66,5 +66,5 @@ namespace ns3 {
     
   };
    
-} // namespace ns3
+
   
