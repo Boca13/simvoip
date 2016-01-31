@@ -2,6 +2,10 @@
 
 #include "ns3/core-module.h"
 #include "ns3/random-variable-stream.h"
+#include "ns3/nstime.h"
+#include "ns3/address.h"
+
+using namespace ns3;
 
 class Central
 {
@@ -19,7 +23,7 @@ public:
 		Cuando un teléfono llama a este método, se almacena con quién está hablando
 		y se establecen los dos como ocupados. Al acabar la llamada se debe llamar a colgar().
 	*/
-	int32_t llamar(uint32_t llamante);
+	Address llamar(uint32_t llamante, Time duracion);
 
 	/*	Método que desahce una llamada entre dos teléfonos.
 		Argumentos:
@@ -28,10 +32,13 @@ public:
 	*/
 	void colgar(uint32_t llamante);
 
+	uint32_t registrar(Address llamante);
+
 
 private:
 	// Estructura que guarda las llamadas como asignaciones entre números de teléfono
 	std::map<uint32_t, uint32_t> llamadas;
+	std::map<uint32_t, Address> telefonos;
 	// Número de teléfonos en la sede 1
 	uint32_t tel1;
 	// Número de teléfonos en la sede 2

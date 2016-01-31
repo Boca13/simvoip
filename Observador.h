@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include <ns3/packet.h>
 #include <ns3/average.h>
@@ -22,7 +22,6 @@ public:
 	virtual ~Observador();
 	void PktEnviado(Ptr<const Packet>paquete);
 	void PktRecibido(Ptr<const Packet>paquete, const Address & dir);
-	void PktEncolado(Ptr<const Packet>paquete);
 	float ActualizaJitter(); /* función que actualiza el jitter cada vez que se envia*/
 	float ActualizaRetardo();/* función que actualiza el retardo */
 	float QoSActual(); /*Función que devuelvo el QoS alcanzado*/
@@ -31,6 +30,7 @@ public:
 private:
 	Time t_enviado; /* time para introducir en la estructura   (se deja de utilizar)*/
 	Time t_encolado; /* tiempo con el que se encola un paquete en el buffer usado para introducir en la estructura*/
+	Time t_TiempoPaqueteAnterior; /*tiempo de la llegada del anterior paquete */
 	float m_enviados;
 	float m_recibidos;
 	float m_perdidos;

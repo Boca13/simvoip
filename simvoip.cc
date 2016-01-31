@@ -50,7 +50,7 @@ typedef struct {
 *	Recibe el n�mero de enlaces y su velocidad y el objeto observador a utilizar
 *	devuelve la QoS conseguida
 */
-void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2);
+void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2, DataRate tasas[2]);
 void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz);
 
 using namespace ns3;
@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
 		NS_LOG_DEBUG("	Usando " << resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
 
-		simular(&resultado, velocidades, observador, telef1, telef2);
+		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec);
 		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
 
 		// ALGORITMO DE PREDICCIÓN LINEALIZANDO
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
 		NS_LOG_DEBUG("	Usando " << resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
-		simular(&resultado, velocidades, observador, telef1, telef2);
+		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec);
 		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
 
 		// Pasar el resultado al anterior
@@ -208,8 +208,8 @@ int main(int argc, char *argv[])
  *
  */
 
-
-void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2)
+// TODO: Crear objetos voip y pasarles los parámetros adecuados
+void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2])
 {
 
 	Ptr<UniformRandomVariable> varon;
