@@ -7,21 +7,23 @@
 #include "ns3/ptr.h"
 #include "ns3/data-rate.h"
 #include "ns3/onoff-application.h"
+#include "simulator.h"
+
     
 using namespace ns3;
  
   class Address;
   class RandomVariableStream;
    
-  class Voip : public Application 
+  class voip : public Application
   {
     public:
       static TypeId GetTypeId (void);
    
       // Constructor de la clase, incializa Parametros: m-central=central, m_ocupado=false, m_tasa=tasa,
       // m_tamPaquete = tamanio, m_timepo = tiempo, etc.
-      Voip (Ptr<Centralita> central, uint64_t tasa, DataRate tasa, Ptr<RandomVariableStream> tiempo);   
-      virtual ~Voip();   
+      voip (Ptr<Centralita> central, uint64_t tamPkt, DataRate tasa, Ptr<RandomVariableStream> tiempo);
+
       void setTasa       (DataRate m_tasa);
       void setDestino    (Address destino);
       void setTamPaquete (uint64_t tamPaquete);
@@ -31,9 +33,19 @@ using namespace ns3;
     private:
       // Heredadas de Aplication.
       // Inicializa (si hace falta) y llama a ProgramaLlamada 
-      virtual void StartApplication (void);   
+      virtual void StartApplication (void){
+
+    	  	 //Aqui debe estar la suscripcion a trazas de esta aplicacion (si la hay)
+    	  ProgramaLlamada();
+
+      }  
       // Cancela las llamadas que haya (tanto pendientes como cursandose)
-      virtual void StopApplication (void);   
+      virtual void StopApplication (void){
+
+    	  Simulator::Cancel(m_proximallamada);
+    	  Simulator::Cancel(m_llamadaactual);
+        
+      }   
   
       // Cancela la proxima llamada (m_proximaLLamada)
       void CancelaLlamada ();
@@ -62,7 +74,9 @@ using namespace ns3;
       TypeId          m_tid;                
       Ptr<RandomVariableStream> m_tiempo;   // Tiempo medio entre llamadas  
       Ptr<RandomVariableStream> m_duracion; // Duracion de la llamada.
-      Ptr<OnOffApplication> m_onoff;        
+      Ptr<OnOffApplication> m_onoff;
+      Ptr<UniformRandomVariable> varon;
+       Ptr<UniformRandomVariable> varoff;
     
   };
    
