@@ -50,7 +50,7 @@ typedef struct {
 *	Recibe el n�mero de enlaces y su velocidad y el objeto observador a utilizar
 *	devuelve la QoS conseguida
 */
-void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2, DataRate tasas[2]);
+void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2, DataRate tasas[2], uint32_t tamPkt);
 void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz);
 
 using namespace ns3;
@@ -65,6 +65,7 @@ int main(int argc, char *argv[])
 	std::string sTasaCodec = "64kbps;96kbps";
 	DataRate tasaCodec[2];	// Forman el intervalo en el que estará la tasa distribuida uniformemente
 	std::map<uint8_t, DataRate> velocidades;	// Velocidades permitidas
+	uint32_t tamPkt = 80;
 
 	// Obtener parámetros de cmd
 	CommandLine cmd;
@@ -209,7 +210,7 @@ int main(int argc, char *argv[])
  */
 
 // TODO: Crear objetos voip y pasarles los parámetros adecuados
-void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2])
+void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2], uint32_t tamPkt)
 {
 
 	Ptr<UniformRandomVariable> varon;
@@ -310,35 +311,22 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	//Establezco un sumidero de paquetes en cada telefono
 	//Utilizamos el puerto 5600 para el sumidero
-	uint16_t port = 5600;
-	PacketSinkHelper sink ("ns3::UdpSocketFactory", Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
-
-
-	ApplicationContainer sumidero1 = sink.Install(terminales1);
-	ApplicationContainer sumidero2 = sink.Install(terminales2);
-
-	//Creo aplicacion que envia paquetes ON/OFF para simular llamada voip
+	
+	Central * centralita;
+	uint16_t h=0;
+	for(uint32_t i=0; i<telef1; i++){
+		
+	voip (centralita, tamPkt, Time("4min"), Time("3min"),
+ 	tasas, R1Devices.Get(h)->GetObject<NetDevice>()->GetAddress() , terminales1.Get(i));
+	h=h+2;
+	}
 
 	
+	//Falta añadir lo de los telefonos2 
 
-	 OnOffHelper clientes ("ns3::UdpSocketFactory",
-		                        Address (InetSocketAddress (Ipv4Address::GetAny (), port)));
 
-	ApplicationContainer tx1 = clientes.Install(terminales1);
-	ApplicationContainer tx2 = clientes.Install(terminales2);
 
 	
-
-	varon=CreateObject<UniformRandomVariable>();
-	  varon->SetAttribute("Max", DoubleValue(MAXONVOIP));
-	  varon->SetAttribute("Min", DoubleValue(MINONVOIP));
-	  varoff=CreateObject<UniformRandomVariable>();
-	  varoff->SetAttribute("Max", DoubleValue(MAXOFFVOIP));
-	  varoff->SetAttribute("Min", DoubleValue(MINOFFVOIP));
-	  //Configuramos la aplicación OnOff
-	  clientes.SetConstantRate (DataRate ("64kbps"));
-	  clientes.SetAttribute("OnTime", PointerValue(varon));
-	  clientes.SetAttribute("OffTime", PointerValue(varoff));
 
 
 
@@ -381,10 +369,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 
 	 
-	tx1.Start (Seconds (2.0));
-	tx2.Start (Seconds (2.0));
-	tx1.Stop (Seconds (15.0));
-	tx2.Stop (Seconds (15.0));
+	
 
 	Simulator::Run ();
 	Simulator::Destroy ();

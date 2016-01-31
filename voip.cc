@@ -8,7 +8,7 @@ using namespace ns3;
 
 
 
-voip::voip (Central * centralita, uint64_t tamPkt, DataRate tasa, Time media, Time duracion, DataRate tasaCodec[2], Address IP, Ptr<Node> node){
+voip::voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP, Ptr<Node> node){
 
 	m_centralita = centralita;
 	m_ocupado = false;
