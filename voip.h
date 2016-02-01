@@ -7,7 +7,7 @@
 #include "ns3/ptr.h"
 #include "ns3/data-rate.h"
 #include "ns3/onoff-application.h"
-#include "simulator.h"
+#include "simvoip.h"
 
     
 using namespace ns3;
