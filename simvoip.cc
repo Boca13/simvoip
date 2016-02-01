@@ -52,7 +52,7 @@ typedef struct {
 *	Recibe el n�mero de enlaces y su velocidad y el objeto observador a utilizar
 *	devuelve la QoS conseguida
 */
-void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2], uint32_t tamPkt);
+void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador **observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2], uint32_t tamPkt);
 void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz);
 
 using namespace ns3;
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
 	Time::SetResolution(Time::US);
 
-	Observador * observador = NULL;
+	
 	Punto anterior = { 0,0,0.0 };
 	Punto resultado = { 3,0,0.0 };
 	uint32_t iteraciones = 0;
@@ -122,7 +122,16 @@ int main(int argc, char *argv[])
 	NS_LOG_DEBUG("FASE I");
 	while (resultado.qos < qos_objetivo)
 	{
-		observador = new Observador();
+		//observador = new Observador();
+		Observador *observador[telef1+telef2];
+
+		for(uint16_t i=0; i<telef1+telef2; i++){
+
+			observador[i] = new Observador();
+		}
+
+
+
 		// Cuenta del tiempo que tarda la iteración
 		Time elapsed = Seconds(time(0));
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
@@ -161,7 +170,12 @@ int main(int argc, char *argv[])
 				resultado.velocidad++;
 			}
 		}
-		delete observador;
+
+		for(uint16_t i=0; i<telef1+telef2; i++){
+		delete observador[i];
+		}	
+
+
 		elapsed = Seconds(time(0)) - elapsed;
 		NS_LOG_DEBUG("La iteración " << iteraciones << " ha tardado " << elapsed.GetSeconds() << " segundos.");
 	}
@@ -171,7 +185,15 @@ int main(int argc, char *argv[])
 	NS_LOG_DEBUG("FASE II");
 	while (resultado.qos > qos_objetivo)
 	{
-		observador = new Observador();
+		//observador = new Observador();
+		Observador  *observador[telef1+telef2];
+
+		for(uint16_t i=0; i<telef1+telef2; i++){
+
+			observador[i] = new Observador();
+
+		}
+
 		// Cuenta del tiempo que tarda la iteración
 		Time elapsed = Seconds(time(0));
 		if (resultado.velocidad == 0)
@@ -194,7 +216,10 @@ int main(int argc, char *argv[])
 
 		elapsed = Seconds(time(0)) - elapsed;
 		NS_LOG_DEBUG("La iteración " << iteraciones << " ha tardado " << elapsed.GetSeconds() << " segundos.");
-		delete observador;
+
+		for(uint16_t i=0; i<telef1+telef2; i++){
+		delete observador[i];
+			}
 	}
 	// El resultado final es el de la estructura anterior
 	NS_LOG_INFO("¡Simulación finalizada!");
@@ -216,7 +241,7 @@ int main(int argc, char *argv[])
  */
 
  // TODO: Crear objetos voip y pasarles los parámetros adecuados
-void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2], uint32_t tamPkt)
+void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador **observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2], uint32_t tamPkt)
 {
 
 	Ptr<UniformRandomVariable> varon;
@@ -380,15 +405,16 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	p2p.EnablePcap("simvoip", Rdevices, true);
 
-	for (i = 0; i <= telef1; i++)
+	for (uint16_t i = 0; i < telef1; i++)
 	{
-		terminales1.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido, &observador));
-		terminales1.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, &observador));
+		terminales1.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido, observador[i]));
+		terminales1.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, observador[i]));
 	}
-	for (i = 0; i <= telef2; i++)
+
+	for (uint16_t i = 0; i < telef2; i++)
 	{
-		terminales2.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido, &observador));
-		terminales2.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, &observador));
+		terminales2.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido, observador[i+telef1]));
+		terminales2.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, observador[i+telef1]));
 
 	}
 	Simulator::Run();
