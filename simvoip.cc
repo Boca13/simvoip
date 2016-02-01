@@ -404,13 +404,12 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 
 
-void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz) {
-
+void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz)
+{
+	NS_LOG_FUNCTION(salto, R1, R2, interfaz);
 	uint8_t metrica = interfaz;
 
-
-
-	for (uint8_t j = 0; j < interfaz; j++) { //Bucle de los enlaces 
+	for (uint8_t j = 1; j < interfaz; j++) { //Bucle de los enlaces 
 			//schedule (tiempoEnElQuePasara, Dir.Objeto, PtrIpv4, Ifaz, Metrica)
 
 		//Para R1 configuro los schedules con los cambios de metrica de enlaces
@@ -421,8 +420,10 @@ void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz) {
 
 		metrica++;
 		if (metrica >= interfaz)
+		{
 			metrica = 0;
-
+			NS_LOG_DEBUG("Cambiando a enlace " << (uint32_t)j);
+		}
 	}
 
 	//Cuando cambio todas las metricas, recalculo las tablas de enrutamiento
@@ -433,7 +434,7 @@ void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz) {
 	//Arreglar esta linea
 	Simulator::Schedule(salto, cambiaEnlace, salto, R1, R2, interfaz);
 
-
+	
 
 }
 
