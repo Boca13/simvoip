@@ -11,10 +11,7 @@
 
     
 using namespace ns3;
- 
-  class Address;
-  class RandomVariableStream;
-   
+
   class voip : public Application
   {
     public:

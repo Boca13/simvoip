@@ -72,9 +72,9 @@ voip::Llama (){
 	//Me pongo en contacto con la centralita
 	m_ocupado=true;
 	m_llamadaactual = m_proximallamada;
-	m_duracion = duracion_de_llamada.GetValue();
+	m_duracion = Time(duracion_de_llamada.GetValue());
 
-		Address direccion_envio = m_centralita->llamar ( m_IP, m_duracion);
+		Address direccion_envio = m_centralita->llamar ( m_numeroNodo, m_duracion);
 
 	//Configuro OnOff?
 
@@ -126,7 +126,7 @@ void voip::Descuelga(Address destino, Time duracion){
 	CancelaLlamada();
 
 
-	m_AppOnOff = OnOffHelper("ns3::UdpSocketFactory", direccion_envio);
+	m_AppOnOff = OnOffHelper("ns3::UdpSocketFactory", destino);
 
 			m_AppOnOff.SetConstantRate (DataRate( m_tasa) );
 
