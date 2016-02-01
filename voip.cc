@@ -57,7 +57,7 @@ void voip::CancelaLlamada() {
 
 void voip::ProgramaLlamada() {
 
-	m_proximallamada = Simulator::Schedule(Time(tiempo_entre_llamadas.GetValue()), this, Llama); //m_tiempo no es tipo Time, falla
+	m_proximallamada = Simulator::Schedule(Time(tiempo_entre_llamadas.GetValue()), this->Llama); //m_tiempo no es tipo Time, falla
 
 }
 
@@ -100,7 +100,7 @@ voip::Llama() {
 
 	m_appc = m_AppOnOff->Install(m_node); //Pasarle por parametro al puntero al nodo.
 	m_appc.Start(Simulator::Now());
-	Simulator::Schedule(Simulator::Now() + m_duracion, this, Cuelga);
+	Simulator::Schedule(Simulator::Now() + m_duracion, this->Cuelga);
 
 }
 
@@ -148,6 +148,6 @@ void voip::Descuelga(Address destino, Time duracion) {
 
 	m_appc = m_AppOnOff->Install(m_node); //Pasarle por parametro al puntero al nodo.
 	m_appc.Start(Simulator::Now());
-	Simulator::Schedule(Simulator::Now() + m_duracion, this, Cuelga);
+	Simulator::Schedule(Simulator::Now() + m_duracion, this->Cuelga);
 
 }
