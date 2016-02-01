@@ -18,7 +18,7 @@ Address Central::llamar(uint32_t llamante, Time duracion)
 	// Se escoge aleatoriamente un número al que llamar
 	int llamado = rnd.GetValue(0, tel1+tel2);
 	// Si el número no se encuentra en la lista, es que está libre
-	if (llamadas.find(llamado)==llamadas.end)
+	if (llamadas.find(llamado)==llamadas.end())
 	{
 		llamadas.insert(std::pair<uint32_t, uint32_t>(llamante, llamado));
 		Simulator::Schedule(duracion, this, colgar, llamante);
