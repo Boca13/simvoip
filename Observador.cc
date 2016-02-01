@@ -49,7 +49,7 @@ Observador::PktRecibido(Ptr<const Packet>paquete, const Address & dir)
 	  Time Ahora = Simulator::Now();
           Retardo.Update((Ahora-Taux).GetMilliSeconds());
 
-	if(t_TiempoPaqueteAnterior != 0)
+	if(!t_TiempoPaqueteAnterior.IsZero())
 	  Jitter.Update(((Ahora-Taux)-t_TiempoPaqueteAnterior).GetMilliSeconds());
 
           m_recibidos=m_recibidos+1;
