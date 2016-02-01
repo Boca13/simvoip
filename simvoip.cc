@@ -324,17 +324,16 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	{
 		telefonos1[i]= new voip(&centralita, tamPkt, Time("4min"), Time("3min"),
 			tasas, R1Devices.Get(h)->GetObject<NetDevice>()->GetAddress(), terminales1.Get(i));
-		h = h + 2;
+		h += 2;
 	}
 
-
+	h = 0;
 	for (uint32_t i = 0; i < telef2; i++)
 	{
 		telefonos2[i] = new voip(&centralita, tamPkt, Time("4min"), Time("3min"),
 			tasas, R2Devices.Get(h)->GetObject<NetDevice>()->GetAddress(), terminales2.Get(i));
-		h = h + 2;
+		h += 2;
 	}
-
 
 
 
