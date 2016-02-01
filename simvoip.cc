@@ -424,7 +424,7 @@ void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz) {
 	//Meto el salto de tiempo
 
 	//Arreglar esta linea
-	Simulator::Schedule(salto, NULL, cambiaEnlace, salto, R1, R2, interfaz);
+	Simulator::Schedule(salto, cambiaEnlace, salto, R1, R2, interfaz);
 
 
 
