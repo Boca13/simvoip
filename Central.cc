@@ -37,8 +37,8 @@ void Central::colgar(uint32_t llamante)
 
 uint32_t Central::registrar(Address llamante)
 {
-	uint32_t indice = (uint32_t) telefonos.count;
-	telefonos.insert(std::pair<uint32_t, Address>(telefonos.count, llamante));
+	uint32_t indice = (uint32_t) telefonos.size();
+	telefonos.insert(std::pair<uint32_t, Address>(telefonos.size(), llamante));
 	return indice;
 }
 
