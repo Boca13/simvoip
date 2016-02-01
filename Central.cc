@@ -21,7 +21,7 @@ Address Central::llamar(uint32_t llamante, Time duracion)
 	if (llamadas.find(llamado)==llamadas.end())
 	{
 		llamadas.insert(std::pair<uint32_t, uint32_t>(llamante, llamado));
-		Simulator::Schedule(duracion, this, colgar, llamante);
+		Simulator::Schedule(duracion, this, Central::colgar, llamante);
 		return telefonos[llamado];
 	}
 	else // Si se encontró, está ocupado y no se produce la llamada
