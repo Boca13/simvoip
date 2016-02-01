@@ -19,6 +19,8 @@ using namespace ns3;
       // Constructor de la clase, incializa Parametros: m-central=central, m_ocupado=false, m_tasa=tasa,
       // m_tamPaquete = tamanio, m_timepo = tiempo, etc.
       voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP,Ptr<Node> node );
+
+	  TypeId GetTypeId(void);
 	  
 	  // Operador de copia
 	  voip& operator=(const voip& otra) {

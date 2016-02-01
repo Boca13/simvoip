@@ -8,6 +8,8 @@ using namespace ns3;
 #define MINOFFVOIP 0.9
 
 
+
+
 voip::voip(Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP, Ptr<Node> node) : Application()
 {
 
@@ -25,7 +27,11 @@ voip::voip(Central * centralita, uint64_t tamPkt, Time media, Time duracion, Dat
 	m_AppOnOff = NULL;
 }
 
-
+TypeId voip::GetTypeId(void)
+{
+	static TypeId tid = TypeId("voip").SetParent<Object>();
+	return tid;
+}
 
 
 void
@@ -99,7 +105,7 @@ voip::Llama() {
 
 	m_appc = m_AppOnOff->Install(m_node); //Pasarle por parametro al puntero al nodo.
 	m_appc.Start(Simulator::Now());
-	
+
 	Simulator::Schedule(m_duracion, &voip::Cuelga, this);
 
 }
