@@ -8,7 +8,7 @@ using namespace ns3;
 #define MINOFFVOIP 0.9
 
 
-voip::voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP, Ptr<Node> node) : OnOffHelper("ns3::UdpSocketFactory", IP)
+voip::voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP, Ptr<Node> node) : Application()
 {
 
 	m_centralita = centralita;
