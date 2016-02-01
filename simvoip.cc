@@ -379,13 +379,13 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	for (i = 0; i <= telef1; i++)
 	{
-		telefonos1[i].Get(i)->GetObject<PacketSink>()->TraceConnectWithoutContext("Rx", MakeCallback(&Observador::PktRecibido, &observador));
-		Rdevices[¡].Get(i)->GetObject<OnOffApplication>()->TraceConnectWithoutContext("Tx", MakeCallback(&Observador::PktEnviado, &observador));
+		telefonos1.Get(i)->GetObject<PacketSink>()->TraceConnectWithoutContext("Rx", MakeCallback(&Observador::PktRecibido, &observador));
+		Rdevices.Get(i)->GetObject<OnOffApplication>()->TraceConnectWithoutContext("Tx", MakeCallback(&Observador::PktEnviado, &observador));
 	}
 	for (i = 0; i <= telef2; i++)
 	{
-		telefonos2[i].Get(i)->GetObject<PacketSink>()->TraceConnectWithoutContext("Rx", MakeCallback(&Observador::PktRecibido, &observador));
-		Rdevices[++i].Get(i)->GetObject<OnOffApplication>()->TraceConnectWithoutContext("Tx", MakeCallback(&Observador::PktEnviado, &observador));
+		telefonos2.Get(i)->GetObject<PacketSink>()->TraceConnectWithoutContext("Rx", MakeCallback(&Observador::PktRecibido, &observador));
+		Rdevices.Get(++i)->GetObject<OnOffApplication>()->TraceConnectWithoutContext("Tx", MakeCallback(&Observador::PktEnviado, &observador));
 
 	}
 	Simulator::Run();
