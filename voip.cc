@@ -12,12 +12,13 @@ using namespace ns3;
 
 voip::voip(Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP, Ptr<Node> node) : Application()
 {
-
+	tiempo_entre_llamadas = CreateObject<ExponentialRandomVariable>();
+	duracion_de_llamada = CreateObject<ExponentialRandomVariable>();
 	m_centralita = centralita;
 	m_ocupado = false;
 	m_tamPaquete = tamPkt;
-	tiempo_entre_llamadas.SetAttribute("Mean", DoubleValue(media.GetSeconds()));
-	duracion_de_llamada.SetAttribute("Mean", DoubleValue(duracion.GetSeconds()));
+	tiempo_entre_llamadas->SetAttribute("Mean", DoubleValue(media.GetSeconds()));
+	duracion_de_llamada->SetAttribute("Mean", DoubleValue(duracion.GetSeconds()));
 	uint32_t minTasa = tasaCodec[0].GetBitRate();
 	uint32_t maxTasa = tasaCodec[1].GetBitRate();
 	m_tasa = tasa_llamadas.GetValue(minTasa, maxTasa);
@@ -62,7 +63,7 @@ void voip::CancelaLlamada() {
 }
 
 void voip::ProgramaLlamada() {
-	m_proximallamada = Simulator::Schedule(Time(tiempo_entre_llamadas.GetValue()), &voip::Llama, this); //m_tiempo no es tipo Time, falla
+	m_proximallamada = Simulator::Schedule(Time(tiempo_entre_llamadas->GetValue()), &voip::Llama, this); //m_tiempo no es tipo Time, falla
 
 }
 
@@ -74,7 +75,7 @@ voip::Llama() {
 	//Me pongo en contacto con la centralita
 	m_ocupado = true;
 	m_llamadaactual = m_proximallamada;
-	m_duracion = Time(duracion_de_llamada.GetValue());
+	m_duracion = Time(duracion_de_llamada->GetValue());
 
 	Address direccion_envio = m_centralita->llamar(m_numeroNodo, m_duracion);
 
