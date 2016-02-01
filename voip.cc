@@ -56,9 +56,7 @@ void voip::CancelaLlamada() {
 }
 
 void voip::ProgramaLlamada() {
-	// Puntero a la función Llama
-	void (voip::*punteroLlama)() = &voip::Llama;
-	m_proximallamada = Simulator::Schedule<void(voip::*)(), voip*>(Time(tiempo_entre_llamadas.GetValue()), punteroLlama, this); //m_tiempo no es tipo Time, falla
+	m_proximallamada = Simulator::Schedule(Time(tiempo_entre_llamadas.GetValue()), &voip::Llama, this); //m_tiempo no es tipo Time, falla
 
 }
 
@@ -101,9 +99,8 @@ voip::Llama() {
 
 	m_appc = m_AppOnOff->Install(m_node); //Pasarle por parametro al puntero al nodo.
 	m_appc.Start(Simulator::Now());
-	// Puntero a la función Cuelga
-	void (voip::*punteroCuelga)() = &voip::Cuelga;
-	Simulator::Schedule<void(voip::*)(),voip*>(m_duracion, punteroCuelga, this);
+	
+	Simulator::Schedule(m_duracion, &voip::Cuelga, this);
 
 }
 
@@ -149,8 +146,7 @@ void voip::Descuelga(Address destino, Time duracion) {
 
 	m_appc = m_AppOnOff->Install(m_node); //Pasarle por parametro al puntero al nodo.
 	m_appc.Start(Simulator::Now());
-	// Puntero a la función Cuelga
-	void (voip::*punteroCuelga)() = &voip::Cuelga;
-	Simulator::Schedule<void(voip::*)(), voip*>(m_duracion, punteroCuelga, this);
+
+	Simulator::Schedule(m_duracion, &voip::Cuelga, this);
 
 }
