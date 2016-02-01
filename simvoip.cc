@@ -246,7 +246,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	//En los netdevices 1-3-5... van los enlaces del Router 2
 
 
-	std::cout << "En Rdevices tengo: " << Rdevices.GetN() / 2 << "enlaces" << std::endl;
+	NS_LOG_DEBUG("En Rdevices tengo: " << Rdevices.GetN() / 2 << "enlaces");
 
 
 	//----Esto seria para las centrales. Ahora los telefonos/bridges
@@ -272,7 +272,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 		R1Devices.Add(enlace1.Get(1));
 	} //Estoy conectando cada telefono al R1
 
-	std::cout << "En R1devices tengo: " << R1Devices.GetN() / 2 << "enlaces" << std::endl;
+	NS_LOG_DEBUG("En R1devices tengo: " << R1Devices.GetN() / 2 << "enlaces");
 
 	NetDeviceContainer R2Devices;
 
@@ -282,7 +282,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 		R2Devices.Add(enlace1.Get(1));
 	}
 
-	std::cout << "En R2devices tengo: " << R2Devices.GetN() / 2 << "enlaces" << std::endl;
+	NS_LOG_DEBUG("En R2devices tengo: " << R2Devices.GetN() / 2 << "enlaces");
 
 	//Añado la pila TCP/IP a los dispositivos
 	InternetStackHelper stack;
