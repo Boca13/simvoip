@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
 	Time::SetResolution(Time::US);
 
-	Observador * observador = new Observador();
+	Observador * observador = NULL;
 	Punto anterior = { 0,0,0.0 };
 	Punto resultado = { 3,0,0.0 };
 	uint32_t iteraciones = 0;
@@ -122,6 +122,7 @@ int main(int argc, char *argv[])
 	NS_LOG_DEBUG("FASE I");
 	while (resultado.qos < qos_objetivo)
 	{
+		observador = new Observador();
 		// Cuenta del tiempo que tarda la iteración
 		Time elapsed = Seconds(time(0));
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
@@ -170,6 +171,7 @@ int main(int argc, char *argv[])
 	NS_LOG_DEBUG("FASE II");
 	while (resultado.qos > qos_objetivo)
 	{
+		observador = new Observador();
 		// Cuenta del tiempo que tarda la iteración
 		Time elapsed = Seconds(time(0));
 		if (resultado.velocidad == 0)
@@ -192,6 +194,7 @@ int main(int argc, char *argv[])
 
 		elapsed = Seconds(time(0)) - elapsed;
 		NS_LOG_DEBUG("La iteración " << iteraciones << " ha tardado " << elapsed.GetSeconds() << " segundos.");
+		delete observador;
 	}
 	// El resultado final es el de la estructura anterior
 	NS_LOG_INFO("¡Simulación finalizada!");
