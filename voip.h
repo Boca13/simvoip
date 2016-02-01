@@ -95,7 +95,7 @@ using namespace ns3;
       Address		  m_IP;
 	  Ptr<ExponentialRandomVariable> tiempo_entre_llamadas;
 	  Ptr<ExponentialRandomVariable> duracion_de_llamada;
-	  UniformRandomVariable tasa_llamadas;
+	  Ptr<UniformRandomVariable> tasa_llamadas;
       uint32_t		 	m_tasa;
       Ptr<UniformRandomVariable> varon;
       Ptr<UniformRandomVariable> varoff;

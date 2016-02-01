@@ -14,6 +14,7 @@ voip::voip(Central * centralita, uint64_t tamPkt, Time media, Time duracion, Dat
 {
 	tiempo_entre_llamadas = CreateObject<ExponentialRandomVariable>();
 	duracion_de_llamada = CreateObject<ExponentialRandomVariable>();
+	tasa_llamadas = CreateObject<UniformRandomVariable>();
 	m_centralita = centralita;
 	m_ocupado = false;
 	m_tamPaquete = tamPkt;
@@ -21,7 +22,7 @@ voip::voip(Central * centralita, uint64_t tamPkt, Time media, Time duracion, Dat
 	duracion_de_llamada->SetAttribute("Mean", DoubleValue(duracion.GetSeconds()));
 	uint32_t minTasa = tasaCodec[0].GetBitRate();
 	uint32_t maxTasa = tasaCodec[1].GetBitRate();
-	m_tasa = tasa_llamadas.GetValue(minTasa, maxTasa);
+	m_tasa = tasa_llamadas->GetValue(minTasa, maxTasa);
 	m_IP = IP;
 	m_node = node;
 	m_numeroNodo = m_centralita->registrar(m_IP);
