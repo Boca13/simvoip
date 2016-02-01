@@ -7,10 +7,6 @@ using namespace ns3;
 #define MAXOFFVOIP 0.8
 #define MINOFFVOIP 0.9
 
-voip::voip()
-{
-
-}
 
 voip::voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP, Ptr<Node> node){
 

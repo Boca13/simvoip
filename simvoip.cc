@@ -317,17 +317,23 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	Central centralita(telef1, telef2);
 	uint16_t h = 0;
-	voip * telefonos1 = new voip[telef1];
-	voip * telefonos2 = new voip[telef2];
+	voip ** telefonos1 = (voip **)calloc(telef1, sizeof(voip*));
+	voip ** telefonos2 = (voip **)calloc(telef2, sizeof(voip*));
+
 	for (uint32_t i = 0; i < telef1; i++)
 	{
-		telefonos1[i]=voip(&centralita, tamPkt, Time("4min"), Time("3min"),
+		telefonos1[i]= new voip(&centralita, tamPkt, Time("4min"), Time("3min"),
 			tasas, R1Devices.Get(h)->GetObject<NetDevice>()->GetAddress(), terminales1.Get(i));
 		h = h + 2;
 	}
 
 
-	//Falta añadir lo de los telefonos2 
+	for (uint32_t i = 0; i < telef2; i++)
+	{
+		telefonos2[i] = new voip(&centralita, tamPkt, Time("4min"), Time("3min"),
+			tasas, R2Devices.Get(h)->GetObject<NetDevice>()->GetAddress(), terminales2.Get(i));
+		h = h + 2;
+	}
 
 
 
@@ -375,10 +381,17 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 
 
-
 	Simulator::Run();
 	Simulator::Destroy();
 
+	for (uint32_t c = 0; c < telef1; c++)
+		delete(telefonos1[c]);
+
+	for (uint32_t c = 0; c < telef2; c++)
+		delete(telefonos2[c]);
+
+	free(telefonos1);
+	free(telefonos2);
 }
 
 
