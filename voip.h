@@ -98,7 +98,7 @@ using namespace ns3;
       Ptr<UniformRandomVariable> varon;
       Ptr<UniformRandomVariable> varoff;
       Ptr<Node>      	m_node;
-      OnOffHelper  		m_AppOnOff;
+      OnOffHelper  	*	m_AppOnOff;
       uint32_t 			m_numeroNodo;
       ApplicationContainer m_appc;
 
