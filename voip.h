@@ -21,6 +21,29 @@ using namespace ns3;
       voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP,Ptr<Node> node );
 	  // Constructor por defecto para el new
 	  voip();
+	  // Operador de copia
+	  voip& operator=(const voip& otra) {
+		  this->m_appc = otra.m_appc;
+		  this->m_AppOnOff = otra.m_AppOnOff;
+		  this->m_centralita = otra.m_centralita;
+		  this->m_destino = otra.m_destino;
+		  this->m_duracion = otra.m_duracion;
+		  this->m_IP = otra.m_IP;
+		  this->m_llamadaactual = otra.m_llamadaactual;
+		  this->m_node = otra.m_node;
+
+		  this->m_numeroNodo = otra.m_numeroNodo;
+		  this->m_ocupado = otra.m_ocupado;
+		  this->m_proximallamada = otra.m_proximallamada;
+		  this->m_startEvent = otra.m_startEvent;
+		  this->m_startTime = otra.m_startTime;
+		  this->m_stopEvent = otra.m_stopEvent;
+		  this->m_stopTime = otra.m_stopTime;
+		  this->m_tamPaquete = otra.m_tamPaquete;
+		  this->m_tasa = otra.m_tasa;
+		  
+		  return *this;
+	  }
 
       void setDestino    (Address destino);
       void setTamPaquete (uint64_t tamPaquete);

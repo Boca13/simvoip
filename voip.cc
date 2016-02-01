@@ -25,7 +25,7 @@ voip::voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, Da
     m_IP = IP;
     m_node = node;
     m_numeroNodo = m_centralita->registrar (m_IP);
-
+	
 }
 
 
