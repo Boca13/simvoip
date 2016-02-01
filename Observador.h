@@ -7,6 +7,7 @@
 #include "ns3/point-to-point-module.h"
 #include "ns3/applications-module.h"
 #include "ns3/ipv4-global-routing-helper.h"
+#include "ns3/ethernet-header.h"
 
 #define JITTER 100 
 #define RETARDO 150
@@ -26,7 +27,7 @@ public:
 	float ActualizaRetardo();/* función que actualiza el retardo */
 	float QoSActual(); /*Función que devuelvo el QoS alcanzado*/
 	void Reset(); /*bpor si tenemos que reiniciar los valores */
-	std::map<uint64_t, Time> array;
+	std::map<uint16_t, Time> array;
 private:
 	Time t_enviado; /* time para introducir en la estructura   (se deja de utilizar)*/
 	Time t_encolado; /* tiempo con el que se encola un paquete en el buffer usado para introducir en la estructura*/

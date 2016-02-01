@@ -22,10 +22,21 @@ Observador::PktEnviado(Ptr<const Packet>paquete)
 {
   /*suponemos que el paquete está en la estructura*/
 
-
+	Ptr<Packet> copia = paquete->Copy();
   	t_encolado=Simulator::Now();
- 	uint64_t id = paquete->GetUid();
- 	array[id]=t_encolado;
+	EthernetHeader header;
+	copia->RemoveHeader(header);
+	uint16_t tipo = header.GetLengthType();
+	NS_LOG_INFO(" tipo: " << (unsigned int)tipo);
+
+	if (tipo == 2048)
+		{
+			Ipv4Header cabecera;
+			copia->RemoveHeader(cabecera);
+			uint16_t identificadorip = cabecera.GetIdentification();
+			array[identificadorip] = t_encolado;
+		}		
+ 	
 	m_enviados++;
   
 }
@@ -35,27 +46,42 @@ Observador::PktEnviado(Ptr<const Packet>paquete)
 void 
 Observador::PktRecibido(Ptr<const Packet>paquete, const Address & dir)
 {
-  std::map<uint64_t,Time>::iterator aux=array.find(paquete->GetUid());
-  if (array.end() == aux)
-    {
-       NS_LOG_INFO("NO ESTA EN LA ESTRUCTURA");
-     }
-      else
-        {
-          NS_LOG_INFO("SI ESTA EN LA ESTRUCTURA");
+
+	Ptr<Packet> copia = paquete->Copy();
+	EthernetHeader header;
+	copia->RemoveHeader(header);
+	uint16_t tipo = header.GetLengthType();
+	NS_LOG_INFO(" tipo: " << (unsigned int)tipo);
+
+	if (tipo == 2048)		
+		{
+			Ipv4Header cabecera;
+			copia->RemoveHeader(cabecera);
+			uint16_t identificadorip = cabecera.GetIdentification();
 
 
-          Time Taux =array[paquete->GetUid()];
-	  Time Ahora = Simulator::Now();
-          Retardo.Update((Ahora-Taux).GetMilliSeconds());
+			std::map<uint16_t, Time>::iterator aux = array.find(identificadorip);
+			if (array.end() == aux)
+			{
+				NS_LOG_INFO("NO ESTA EN LA ESTRUCTURA");
+			}
+			else
+			{
+				NS_LOG_INFO("SI ESTA EN LA ESTRUCTURA");
 
-	if(!t_TiempoPaqueteAnterior.IsZero())
-	  Jitter.Update(((Ahora-Taux)-t_TiempoPaqueteAnterior).GetMilliSeconds());
 
-          m_recibidos=m_recibidos+1;
-	  t_TiempoPaqueteAnterior=(Ahora-Taux);
-          array.erase(aux);
-        }
+				Time Taux = array[identificadorip];
+				Time Ahora = Simulator::Now();
+				Retardo.Update((Ahora - Taux).GetMilliSeconds());
+
+				if (!t_TiempoPaqueteAnterior.IsZero())
+					Jitter.Update(((Ahora - Taux) - t_TiempoPaqueteAnterior).GetMilliSeconds());
+
+				m_recibidos = m_recibidos + 1;
+				t_TiempoPaqueteAnterior = (Ahora - Taux);
+				array.erase(aux);
+			}
+		}
 }
 
 float
@@ -75,7 +101,7 @@ Observador::QoSActual()
    m_porcentaje=((m_perdidos)/m_enviados)*100; //referente a paquetes perdidos
   
   
-    m_QoS=(m_porcentaje/PORCENTAJE + Jitter.Mean()/JITTER + Retardo.Mean()/RETARDO)/3;
+    m_QoS=1-(m_porcentaje/PORCENTAJE + Jitter.Mean()/JITTER + Retardo.Mean()/RETARDO)/3;
   return m_QoS; 
 }
 
