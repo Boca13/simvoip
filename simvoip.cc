@@ -409,7 +409,7 @@ void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz)
 	NS_LOG_FUNCTION(salto, R1, R2, interfaz);
 	uint8_t metrica = interfaz;
 
-	for (uint8_t j = 1; j < interfaz; j++) { //Bucle de los enlaces 
+	for (uint8_t j = 1; j <= interfaz; j++) { //Bucle de los enlaces 
 			//schedule (tiempoEnElQuePasara, Dir.Objeto, PtrIpv4, Ifaz, Metrica)
 
 		//Para R1 configuro los schedules con los cambios de metrica de enlaces
