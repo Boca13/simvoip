@@ -93,9 +93,9 @@ using namespace ns3;
       EventId         m_llamadaactual;      // Para poder cancelarla.  
       Time			  m_duracion; // Duracion de la llamada.
       Address		  m_IP;
-      UniformRandomVariable tiempo_entre_llamadas;
-      UniformRandomVariable duracion_de_llamada;
-      UniformRandomVariable tasa_llamadas;
+      ExponentialRandomVariable tiempo_entre_llamadas;
+	  ExponentialRandomVariable duracion_de_llamada;
+	  ExponentialRandomVariable tasa_llamadas;
       uint32_t		 	m_tasa;
       Ptr<UniformRandomVariable> varon;
       Ptr<UniformRandomVariable> varoff;
