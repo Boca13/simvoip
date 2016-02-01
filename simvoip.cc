@@ -406,7 +406,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz)
 {
-	NS_LOG_FUNCTION(salto, R1, R2, interfaz);
+	//NS_LOG_FUNCTION(salto, R1, R2, interfaz);
 	uint8_t metrica = interfaz;
 
 	for (uint8_t j = 1; j <= interfaz; j++) { //Bucle de los enlaces 
