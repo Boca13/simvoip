@@ -26,6 +26,8 @@ Parámetros de salida del programa:
 #include "ns3/ipv4-global-routing-helper.h"
 #include "ns3/gnuplot.h"
 #include "Observador.h"
+#include "Central.h"
+#include "voip.h"
 #include "ns3/bridge-module.h"
 
 #define DURACION 120.0
@@ -50,7 +52,7 @@ typedef struct {
 *	Recibe el n�mero de enlaces y su velocidad y el objeto observador a utilizar
 *	devuelve la QoS conseguida
 */
-void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador,uint16_t telef1,uint16_t telef2, DataRate tasas[2], uint32_t tamPkt);
+void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2], uint32_t tamPkt);
 void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz);
 
 using namespace ns3;
@@ -65,7 +67,7 @@ int main(int argc, char *argv[])
 	std::string sTasaCodec = "64kbps;96kbps";
 	DataRate tasaCodec[2];	// Forman el intervalo en el que estará la tasa distribuida uniformemente
 	std::map<uint8_t, DataRate> velocidades;	// Velocidades permitidas
-	uint32_t tamPkt = 80;
+	uint32_t tamPkt = 500;
 
 	// Obtener parámetros de cmd
 	CommandLine cmd;
@@ -75,6 +77,7 @@ int main(int argc, char *argv[])
 	cmd.AddValue("velocidades", "velocidades de enlace que se pueden contratar con el operador separadas por ;", sVelocidades);
 	cmd.AddValue("tasaLlamadas", "Tasa media de ocurrencia de llamadas de los usuarios", tasaLlamadas);
 	cmd.AddValue("tasaCodec", "Intervalo de la tasa de bits del códec de audio", sTasaCodec);
+	cmd.AddValue("tamPaquete", "Tamaño de los paquetes", tamPkt);
 	cmd.Parse(argc, argv);
 
 
@@ -104,7 +107,7 @@ int main(int argc, char *argv[])
 	plot2.SetTitle("---");
 	plot2.SetLegend("Tiempo medio de permanencia en el estado On", "Latencia (us)");
 
-	
+
 	Time::SetResolution(Time::US);
 
 	Observador * observador = new Observador();
@@ -124,7 +127,7 @@ int main(int argc, char *argv[])
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
 		NS_LOG_DEBUG("	Usando " << resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
 
-		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec);
+		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec, tamPkt);
 		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
 
 		// ALGORITMO DE PREDICCIÓN LINEALIZANDO
@@ -145,7 +148,7 @@ int main(int argc, char *argv[])
 		resultado.enlaces = 0;
 		resultado.velocidad = 0;
 		// Repartir la x obtenida en velocidad y número de enlaces de forma que haya el mínimo número de enlaces
-		while ((x / velocidades[resultado.velocidad].GetBitRate() / 1e6)>resultado.enlaces)
+		while ((x / velocidades[resultado.velocidad].GetBitRate() / 1e6) > resultado.enlaces)
 		{
 			if (resultado.velocidad == (velocidades.size() - 1))
 			{
@@ -181,7 +184,7 @@ int main(int argc, char *argv[])
 
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
 		NS_LOG_DEBUG("	Usando " << resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
-		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec);
+		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec, tamPkt);
 		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
 
 		// Pasar el resultado al anterior
@@ -192,7 +195,7 @@ int main(int argc, char *argv[])
 	}
 	// El resultado final es el de la estructura anterior
 	NS_LOG_INFO("¡Simulación finalizada!");
-	NS_LOG_INFO("La solución óptima es utilizar " << (unsigned int) anterior.enlaces << " enlaces con una tasa de " << anterior.velocidad << ".");
+	NS_LOG_INFO("La solución óptima es utilizar " << (unsigned int)anterior.enlaces << " enlaces con una tasa de " << anterior.velocidad << ".");
 	NS_LOG_INFO("Se obtiene una calidad de servicio de " << anterior.qos);
 	return 0;
 }
@@ -209,7 +212,7 @@ int main(int argc, char *argv[])
  *
  */
 
-// TODO: Crear objetos voip y pasarles los parámetros adecuados
+ // TODO: Crear objetos voip y pasarles los parámetros adecuados
 void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2], uint32_t tamPkt)
 {
 
@@ -225,25 +228,25 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	//Configuro la topologia p2p
 	PointToPointHelper p2p;
-	p2p.SetDeviceAttribute ("DataRate", DataRateValue (velocidades[resultado->velocidad]));
-	p2p.SetChannelAttribute ("Delay", StringValue ("2ms"));
+	p2p.SetDeviceAttribute("DataRate", DataRateValue(velocidades[resultado->velocidad]));
+	p2p.SetChannelAttribute("Delay", StringValue("2ms"));
 
 	//Creo los enlaces p2p entre centrales
 
 	NetDeviceContainer Rdevices;
 
-	for (uint8_t j=0;j<resultado->enlaces;j++){
+	for (uint8_t j = 0; j < resultado->enlaces; j++) {
 
-		NetDeviceContainer enlaceRouters = p2p.Install (NodeContainer (R.Get(0), R.Get(1) ) );
+		NetDeviceContainer enlaceRouters = p2p.Install(NodeContainer(R.Get(0), R.Get(1)));
 
-		Rdevices.Add (enlaceRouters.Get(0));
-		Rdevices.Add (enlaceRouters.Get(1));
+		Rdevices.Add(enlaceRouters.Get(0));
+		Rdevices.Add(enlaceRouters.Get(1));
 	}
-		//En los netdevices 0-2-4...van los enlaces del Router 1
-		//En los netdevices 1-3-5... van los enlaces del Router 2
+	//En los netdevices 0-2-4...van los enlaces del Router 1
+	//En los netdevices 1-3-5... van los enlaces del Router 2
 
 
-	std::cout << "En Rdevices tengo: "<<Rdevices.GetN() / 2 << "enlaces" << std::endl;
+	std::cout << "En Rdevices tengo: " << Rdevices.GetN() / 2 << "enlaces" << std::endl;
 
 
 	//----Esto seria para las centrales. Ahora los telefonos/bridges
@@ -258,28 +261,28 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 
 	PointToPointHelper p2pInterno;
-	p2pInterno.SetDeviceAttribute ("DataRate", StringValue ("100Mbps"));
-	p2pInterno.SetChannelAttribute ("Delay", StringValue ("2ms"));
+	p2pInterno.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
+	p2pInterno.SetChannelAttribute("Delay", StringValue("2ms"));
 
 	NetDeviceContainer R1Devices;
 
-	for(uint16_t j=0;j<telef1;j++){
-		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales1.Get (j) ,R.Get(0))  );
-		R1Devices.Add (enlace1.Get(0));
-		R1Devices.Add (enlace1.Get(1));
+	for (uint16_t j = 0; j < telef1; j++) {
+		NetDeviceContainer enlace1 = p2pInterno.Install(NodeContainer(terminales1.Get(j), R.Get(0)));
+		R1Devices.Add(enlace1.Get(0));
+		R1Devices.Add(enlace1.Get(1));
 	} //Estoy conectando cada telefono al R1
 
-	std::cout << "En R1devices tengo: "<<R1Devices.GetN() / 2<< "enlaces" << std::endl;
-	
+	std::cout << "En R1devices tengo: " << R1Devices.GetN() / 2 << "enlaces" << std::endl;
+
 	NetDeviceContainer R2Devices;
-	
-	for(uint16_t j=0;j<telef2;j++){
-		NetDeviceContainer enlace1 = p2pInterno.Install (NodeContainer(terminales2.Get(j),R.Get(1))  );
-		R2Devices.Add (enlace1.Get(0));
-		R2Devices.Add (enlace1.Get(1));
+
+	for (uint16_t j = 0; j < telef2; j++) {
+		NetDeviceContainer enlace1 = p2pInterno.Install(NodeContainer(terminales2.Get(j), R.Get(1)));
+		R2Devices.Add(enlace1.Get(0));
+		R2Devices.Add(enlace1.Get(1));
 	}
 
-	std::cout << "En R2devices tengo: "<<R2Devices.GetN()/ 2 << "enlaces" << std::endl;
+	std::cout << "En R2devices tengo: " << R2Devices.GetN() / 2 << "enlaces" << std::endl;
 
 	//Añado la pila TCP/IP a los dispositivos
 	InternetStackHelper stack;
@@ -291,123 +294,125 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	Ipv4AddressHelper ipv4;
 	Ipv4InterfaceContainer telefonosSede1;
-	ipv4.SetBase ("10.1.0.0","255.255.0.0");
-	telefonosSede1 = ipv4.Assign (R1Devices);
+	ipv4.SetBase("10.1.0.0", "255.255.0.0");
+	telefonosSede1 = ipv4.Assign(R1Devices);
 
-	
+
 	Ipv4InterfaceContainer telefonosSede2;
-	ipv4.SetBase ("10.2.0.0","255.255.0.0");
-	telefonosSede2 = ipv4.Assign (R2Devices);
+	ipv4.SetBase("10.2.0.0", "255.255.0.0");
+	telefonosSede2 = ipv4.Assign(R2Devices);
 
 
-	
+
 	Ipv4InterfaceContainer routers;
-	ipv4.SetBase ("10.3.0.0","255.255.255.0");
-	routers = ipv4.Assign (Rdevices);
+	ipv4.SetBase("10.3.0.0", "255.255.255.0");
+	routers = ipv4.Assign(Rdevices);
 
 
-	Ipv4GlobalRoutingHelper::PopulateRoutingTables ();
+	Ipv4GlobalRoutingHelper::PopulateRoutingTables();
 	//Creo aplicacion UDP sumidero y tal.
 
 	//Establezco un sumidero de paquetes en cada telefono
 	//Utilizamos el puerto 5600 para el sumidero
-	
-	Central * centralita;
-	uint16_t h=0;
-	for(uint32_t i=0; i<telef1; i++){
-		
-	voip (centralita, tamPkt, Time("4min"), Time("3min"),
- 	tasas, R1Devices.Get(h)->GetObject<NetDevice>()->GetAddress() , terminales1.Get(i));
-	h=h+2;
+
+	Central centralita(telef1, telef2);
+	uint16_t h = 0;
+	voip * telefonos1 = new voip[telef1];
+	voip * telefonos2 = new voip[telef2];
+	for (uint32_t i = 0; i < telef1; i++)
+	{
+		telefonos1[i]=voip(&centralita, tamPkt, Time("4min"), Time("3min"),
+			tasas, R1Devices.Get(h)->GetObject<NetDevice>()->GetAddress(), terminales1.Get(i));
+		h = h + 2;
 	}
 
-	
+
 	//Falta añadir lo de los telefonos2 
 
 
 
-	
+
 
 
 
 	//Cambio de cola de ROUTER 1 (por si hace falta)
 	PointerValue tmp;
-	Rdevices.Get(0)->GetObject<NetDevice>()->GetAttribute("TxQueue",tmp);
+	Rdevices.Get(0)->GetObject<NetDevice>()->GetAttribute("TxQueue", tmp);
 	Ptr<Object> txQueue = tmp.GetObject();
 	Ptr<DropTailQueue> dtq = txQueue->GetObject <DropTailQueue>();
-	NS_ASSERT (dtq!=0);
+	NS_ASSERT(dtq != 0);
 	UintegerValue limit;
-	dtq->GetAttribute("MaxPackets",limit);
-	NS_LOG_INFO ("Tamaño de la cola del Router 1: "<<limit.Get()<<" paquetes" );
-	dtq->SetAttribute("MaxPackets",UintegerValue(5));
-	dtq->GetAttribute("MaxPackets",limit);
-	NS_LOG_INFO("Tamaño de la cola del Router 1 cambiado a: "<<limit.Get()<<" paquetes");
+	dtq->GetAttribute("MaxPackets", limit);
+	NS_LOG_INFO("Tamaño de la cola del Router 1: " << limit.Get() << " paquetes");
+	dtq->SetAttribute("MaxPackets", UintegerValue(5));
+	dtq->GetAttribute("MaxPackets", limit);
+	NS_LOG_INFO("Tamaño de la cola del Router 1 cambiado a: " << limit.Get() << " paquetes");
 
-	Rdevices.Get(1)->GetObject<NetDevice>()->GetAttribute("TxQueue",tmp);
+	Rdevices.Get(1)->GetObject<NetDevice>()->GetAttribute("TxQueue", tmp);
 	txQueue = tmp.GetObject();
 	dtq = txQueue->GetObject <DropTailQueue>();
-	NS_ASSERT (dtq!=0);
-	dtq->GetAttribute("MaxPackets",limit);
-	NS_LOG_INFO ("Tamaño de la cola del Router 2: "<<limit.Get()<<" paquetes" );
-	dtq->SetAttribute("MaxPackets",UintegerValue(5));
-	dtq->GetAttribute("MaxPackets",limit);
-	NS_LOG_INFO("Tamaño de la cola del Router 2 cambiado a: "<<limit.Get()<<" paquetes");
+	NS_ASSERT(dtq != 0);
+	dtq->GetAttribute("MaxPackets", limit);
+	NS_LOG_INFO("Tamaño de la cola del Router 2: " << limit.Get() << " paquetes");
+	dtq->SetAttribute("MaxPackets", UintegerValue(5));
+	dtq->GetAttribute("MaxPackets", limit);
+	NS_LOG_INFO("Tamaño de la cola del Router 2 cambiado a: " << limit.Get() << " paquetes");
 
 
 	//Configuracion del cambio de enlace
 	Ptr <Node> n1 = R.Get(0);
-		Ptr<Ipv4> punteroIp1 = n1->GetObject<Ipv4> ();
+	Ptr<Ipv4> punteroIp1 = n1->GetObject<Ipv4>();
 	Ptr <Node> n2 = R.Get(1);
-		Ptr<Ipv4> punteroIp2 = n2->GetObject<Ipv4> ();
+	Ptr<Ipv4> punteroIp2 = n2->GetObject<Ipv4>();
 
-	 cambiaEnlace (Time ("1s") , punteroIp1, punteroIp2, resultado->enlaces);
+	cambiaEnlace(Time("1s"), punteroIp1, punteroIp2, resultado->enlaces);
 
 
 	//SUSCRIPCION DE TRAZAS
 
-	 p2p.EnablePcap ("simvoip", Rdevices, true);
+	p2p.EnablePcap("simvoip", Rdevices, true);
 
 
-	 
-	
 
-	Simulator::Run ();
-	Simulator::Destroy ();
+
+
+	Simulator::Run();
+	Simulator::Destroy();
 
 }
 
-	
 
 
-void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz){
+
+void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz) {
 
 	uint8_t metrica = interfaz;
 
-	
 
-		for (uint8_t j = 0; j < interfaz; j++){ //Bucle de los enlaces 
-				//schedule (tiempoEnElQuePasara, Dir.Objeto, PtrIpv4, Ifaz, Metrica)
 
-			//Para R1 configuro los schedules con los cambios de metrica de enlaces
-			R1->SetMetric(j, metrica); //enlaces de R1
+	for (uint8_t j = 0; j < interfaz; j++) { //Bucle de los enlaces 
+			//schedule (tiempoEnElQuePasara, Dir.Objeto, PtrIpv4, Ifaz, Metrica)
 
-			R2->SetMetric(j, metrica); //enlaces de R2
+		//Para R1 configuro los schedules con los cambios de metrica de enlaces
+		R1->SetMetric(j, metrica); //enlaces de R1
 
-			
-			metrica++;
-				if(metrica >= interfaz)
-					metrica=0;
+		R2->SetMetric(j, metrica); //enlaces de R2
 
-	} 
 
-		//Cuando cambio todas las metricas, recalculo las tablas de enrutamiento
-			Ipv4GlobalRoutingHelper::RecomputeRoutingTables();
+		metrica++;
+		if (metrica >= interfaz)
+			metrica = 0;
 
-			//Meto el salto de tiempo
-			
-			//Arreglar esta linea
-			Simulator::Schedule (salto, NULL, cambiaEnlace, salto, R1, R2, interfaz);
-			
+	}
+
+	//Cuando cambio todas las metricas, recalculo las tablas de enrutamiento
+	Ipv4GlobalRoutingHelper::RecomputeRoutingTables();
+
+	//Meto el salto de tiempo
+
+	//Arreglar esta linea
+	Simulator::Schedule(salto, NULL, cambiaEnlace, salto, R1, R2, interfaz);
+
 
 
 }

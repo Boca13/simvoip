@@ -7,7 +7,10 @@ using namespace ns3;
 #define MAXOFFVOIP 0.8
 #define MINOFFVOIP 0.9
 
+voip::voip()
+{
 
+}
 
 voip::voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP, Ptr<Node> node){
 
@@ -21,7 +24,7 @@ voip::voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, Da
     m_tasa = tasa_llamadas.GetValue(minTasa,maxTasa);
     m_IP = IP;
     m_node = node;
-    m_numeroNodo = registrar (m_IP);
+    m_numeroNodo = m_centralita->registrar (m_IP);
 
 }
 
@@ -71,7 +74,7 @@ voip::Llama (){
 	m_llamadaactual = m_proximallamada;
 	m_duracion = duracion_de_llamada.GetValue();
 
-		Address direccion_envio = llamar ( m_IP, m_duracion);
+		Address direccion_envio = m_centralita->llamar ( m_IP, m_duracion);
 
 	//Configuro OnOff?
 
