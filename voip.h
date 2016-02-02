@@ -1,6 +1,8 @@
 /* -*- Mode:C++; c-file-style:"gnu"; indent-tabs-mode:nil; -*- */
+#ifndef VOIP_H
 
-#include "Central.h"
+#define VOIP_H
+
 #include "ns3/address.h"
 #include "ns3/application.h"
 #include "ns3/event-id.h"
@@ -8,6 +10,7 @@
 #include "ns3/data-rate.h"
 #include "ns3/onoff-application.h"
 #include "Observador.h"
+#include "Central.h"
 
     
 using namespace ns3;
@@ -18,7 +21,17 @@ using namespace ns3;
    
       // Constructor de la clase, incializa Parametros: m-central=central, m_ocupado=false, m_tasa=tasa,
       // m_tamPaquete = tamanio, m_timepo = tiempo, etc.
-      voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Address IP,Ptr<Node> node );
+      voip (Central * centralita, uint64_t tamPkt, Time media, Time duracion, DataRate tasaCodec[2], Ipv4Address IP, Ptr<Node> node );
+
+	  // Cancela (CancelaLLamada) la llamada pendiente y configura un OnOffAplication 
+	  // adecuadamente y hace un Start a OnOffAplication al destino indicado. Por ultimo, 
+	  // programa (schedule) una llamada a la funcion Cuelga() en duracion  
+	  void Descuelga(Address destino, Time duracion);
+
+	  uint32_t GetNumeroNodo()
+	  {
+		  return m_numeroNodo;
+	  }
 
 	  TypeId GetTypeId(void);
 	  
@@ -80,11 +93,7 @@ using namespace ns3;
       void Llama ();
       // Hace una llamada al Stop de OnOffApplication y llama al funcion ProgramaLlamada
       void Cuelga ();
-      // Cancela (CancelaLLamada) la llamada pendiente y configura un OnOffAplication 
-      // adecuadamente y hace un Start a OnOffAplication al destino indicado. Por ultimo, 
-      // programa (schedule) una llamada a la funcion Cuelga() en duracion  
-      void Descuelga (Address destino, Time duracion); 
-      
+            
       Address         m_destino;         
       bool            m_ocupado;            // Indica si el terminal esta ocupado.
       uint64_t        m_tamPaquete;     
@@ -92,7 +101,7 @@ using namespace ns3;
       EventId         m_proximallamada;     // Para poder cancelarla.
       EventId         m_llamadaactual;      // Para poder cancelarla.  
       Time			  m_duracion; // Duracion de la llamada.
-      Address		  m_IP;
+	  Ipv4Address		  m_IP;
 	  Ptr<ExponentialRandomVariable> tiempo_entre_llamadas;
 	  Ptr<ExponentialRandomVariable> duracion_de_llamada;
 	  Ptr<UniformRandomVariable> tasa_llamadas;
@@ -108,4 +117,4 @@ using namespace ns3;
   };
    
 
-  
+#endif

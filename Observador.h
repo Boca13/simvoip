@@ -22,12 +22,14 @@ public:
 	Observador();
 	virtual ~Observador();
 	void PktEnviado(Ptr<const Packet>paquete);
-	void PktRecibido(Ptr<const Packet>paquete, const Address & dir);
-	float ActualizaJitter(); /* función que actualiza el jitter cada vez que se envia*/
-	float ActualizaRetardo();/* función que actualiza el retardo */
+	void PktRecibido(Ptr<const Packet>paquete);
+	float GetJitter(); /* función que actualiza el jitter cada vez que se envia*/
+	float GetRetardo();/* función que actualiza el retardo */
 	float QoSActual(); /*Función que devuelvo el QoS alcanzado*/
 	void Reset(); /*bpor si tenemos que reiniciar los valores */
-	std::map<uint16_t, Time> array;
+	std::map<uint64_t, Time> array;
+	std::map<Ipv4Address, Time> arrayTiempoAnterior;
+	void ActualizarNumLlamadas(uint32_t numero);
 private:
 	Time t_enviado; /* time para introducir en la estructura   (se deja de utilizar)*/
 	Time t_encolado; /* tiempo con el que se encola un paquete en el buffer usado para introducir en la estructura*/
@@ -40,5 +42,6 @@ private:
 	uint64_t m_usuarios; /* (Duda) para calcular usuarios totales hablando al mismo tiempo*/
 	Average<float>Jitter;  /* jitter del buffer */
 	Average<float>Retardo; /* retardo de propagación*/
+	//Falta ACUMULADOR LLAMADO
 };
 

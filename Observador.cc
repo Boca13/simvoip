@@ -3,6 +3,7 @@
 NS_LOG_COMPONENT_DEFINE ("Observador");
 Observador::Observador()
 {
+	NS_LOG_FUNCTION_NOARGS();
   m_enviados=0;
   m_recibidos=0;
   m_perdidos=0;
@@ -21,6 +22,7 @@ void
 Observador::PktEnviado(Ptr<const Packet>paquete)
 {
   /*suponemos que el paquete está en la estructura*/
+	NS_LOG_FUNCTION(paquete);
 
 	Ptr<Packet> copia = paquete->Copy();
   	t_encolado=Simulator::Now();
@@ -33,9 +35,9 @@ Observador::PktEnviado(Ptr<const Packet>paquete)
 		{
 			Ipv4Header cabecera;
 			copia->RemoveHeader(cabecera);
-			uint16_t identificadorip = cabecera.GetIdentification();
-			array[identificadorip] = t_encolado;
-		}		
+			array[paquete->GetUid()] = t_encolado;		
+
+		}
  	
 	m_enviados++;
   
@@ -44,8 +46,9 @@ Observador::PktEnviado(Ptr<const Packet>paquete)
 
 
 void 
-Observador::PktRecibido(Ptr<const Packet>paquete, const Address & dir)
+Observador::PktRecibido(Ptr<const Packet>paquete)
 {
+		NS_LOG_FUNCTION(paquete);
 
 	Ptr<Packet> copia = paquete->Copy();
 	EthernetHeader header;
@@ -53,32 +56,33 @@ Observador::PktRecibido(Ptr<const Packet>paquete, const Address & dir)
 	uint16_t tipo = header.GetLengthType();
 	NS_LOG_INFO(" tipo: " << (unsigned int)tipo);
 
-	if (tipo == 2048)		
+	if (tipo == 2048)
 		{
 			Ipv4Header cabecera;
 			copia->RemoveHeader(cabecera);
-			uint16_t identificadorip = cabecera.GetIdentification();
+			Ipv4Address direccion = cabecera.GetDestination();
 
 
-			std::map<uint16_t, Time>::iterator aux = array.find(identificadorip);
+			std::map<uint64_t, Time>::iterator aux = array.find(paquete->GetUid());
 			if (array.end() == aux)
 			{
-				NS_LOG_INFO("NO ESTA EN LA ESTRUCTURA");
+				NS_LOG_DEBUG("[Observador] NO ESTA EN LA ESTRUCTURA");
 			}
 			else
 			{
-				NS_LOG_INFO("SI ESTA EN LA ESTRUCTURA");
+				NS_LOG_DEBUG("[Observador] SI ESTA EN LA ESTRUCTURA");
 
-
-				Time Taux = array[identificadorip];
+				Time tiempoEnvio = array[paquete->GetUid()];
 				Time Ahora = Simulator::Now();
-				Retardo.Update((Ahora - Taux).GetMilliSeconds());
-
-				if (!t_TiempoPaqueteAnterior.IsZero())
-					Jitter.Update(((Ahora - Taux) - t_TiempoPaqueteAnterior).GetMilliSeconds());
+				std::map<Ipv4Address, Time>::iterator aux2 = arrayTiempoAnterior.find(direccion);
+				Time tiempoAnterior = arrayTiempoAnterior[direccion];
+				Retardo.Update((Ahora - tiempoEnvio).GetMilliSeconds());
+				
+				if (!tiempoAnterior.IsZero())
+					Jitter.Update(((Ahora - tiempoEnvio) - tiempoAnterior).GetMilliSeconds());
 
 				m_recibidos = m_recibidos + 1;
-				t_TiempoPaqueteAnterior = (Ahora - Taux);
+				arrayTiempoAnterior[direccion] = (Ahora - tiempoEnvio);
 				array.erase(aux);
 			}
 		}
@@ -87,7 +91,8 @@ Observador::PktRecibido(Ptr<const Packet>paquete, const Address & dir)
 float
 Observador::QoSActual()
 {
-  
+  NS_LOG_FUNCTION_NOARGS();
+
    /*
     modelo E 
     QoS= (Ro − Is) − Id − Ie-eff + A 
@@ -109,22 +114,34 @@ Observador::QoSActual()
 
 
 float 
-Observador::ActualizaJitter()
+Observador::GetJitter()
 {
-  /* el jitter debe se menor de 100 ms */
+	NS_LOG_FUNCTION_NOARGS();
+
+  /* el jitter debe se menor de 50 ms */
   return Jitter.Mean();
 }
 
 float
-Observador::ActualizaRetardo()
+Observador::GetRetardo()
 {
-  /* el retardo debe ser menor de 150ms */
+ NS_LOG_FUNCTION_NOARGS();
+ /* el retardo debe ser menor de 100ms */
   return Retardo.Mean();
 }
 
 void
 Observador::Reset()
 {
+	NS_LOG_FUNCTION_NOARGS();
+
   Jitter.Reset();
   Retardo.Reset();
+}
+
+void Observador::ActualizarNumLlamadas(uint32_t numero)
+{
+	// Actualizar acumulador
+	// TODO
+	//acNumLlamadas->Update(numero);
 }

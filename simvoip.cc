@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
 	Time::SetResolution(Time::US);
 
-	Observador * observador = NULL;
+	
 	Punto anterior = { 0,0,0.0 };
 	Punto resultado = { 3,0,0.0 };
 	uint32_t iteraciones = 0;
@@ -122,9 +122,12 @@ int main(int argc, char *argv[])
 	NS_LOG_DEBUG("FASE I");
 	while (resultado.qos < qos_objetivo)
 	{
-		observador = new Observador();
+		Observador * observador = new Observador();
+	
+
+
 		// Cuenta del tiempo que tarda la iteración
-		Time elapsed = Seconds(time(0));
+		Time elapsed = Seconds(Time(0));
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
 		NS_LOG_DEBUG("	Usando " << resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
 
@@ -161,8 +164,13 @@ int main(int argc, char *argv[])
 				resultado.velocidad++;
 			}
 		}
+
+
 		delete observador;
-		elapsed = Seconds(time(0)) - elapsed;
+			
+
+
+		elapsed = Seconds(Time(0)) - elapsed;
 		NS_LOG_DEBUG("La iteración " << iteraciones << " ha tardado " << elapsed.GetSeconds() << " segundos.");
 	}
 	// FASE II: Descenso fino
@@ -171,9 +179,11 @@ int main(int argc, char *argv[])
 	NS_LOG_DEBUG("FASE II");
 	while (resultado.qos > qos_objetivo)
 	{
-		observador = new Observador();
+		Observador * observador = new Observador();
+		
+
 		// Cuenta del tiempo que tarda la iteración
-		Time elapsed = Seconds(time(0));
+		Time elapsed = Seconds(Time(0));
 		if (resultado.velocidad == 0)
 		{
 			resultado.velocidad = (velocidades.size() - 1);
@@ -192,9 +202,12 @@ int main(int argc, char *argv[])
 		// Pasar el resultado al anterior
 		anterior = resultado;
 
-		elapsed = Seconds(time(0)) - elapsed;
+		elapsed = Seconds(Time(0)) - elapsed;
 		NS_LOG_DEBUG("La iteración " << iteraciones << " ha tardado " << elapsed.GetSeconds() << " segundos.");
+
+	
 		delete observador;
+			
 	}
 	// El resultado final es el de la estructura anterior
 	NS_LOG_INFO("¡Simulación finalizada!");
@@ -267,25 +280,26 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	p2pInterno.SetDeviceAttribute("DataRate", StringValue("100Mbps"));
 	p2pInterno.SetChannelAttribute("Delay", StringValue("2ms"));
 
-	NetDeviceContainer R1Devices;
+	NetDeviceContainer R1DevicesTelefonos;
+	NetDeviceContainer R1DevicesRouter;
 
 	for (uint16_t j = 0; j < telef1; j++) {
 		NetDeviceContainer enlace1 = p2pInterno.Install(NodeContainer(terminales1.Get(j), R.Get(0)));
-		R1Devices.Add(enlace1.Get(0));
-		R1Devices.Add(enlace1.Get(1));
+		R1DevicesTelefonos.Add(enlace1.Get(0));
+		R1DevicesRouter.Add(enlace1.Get(1));
 	} //Estoy conectando cada telefono al R1
 
-	NS_LOG_DEBUG("En R1devices tengo: " << R1Devices.GetN() / 2 << "enlaces");
+	//NS_LOG_DEBUG("En R1devices tengo: " << R1Devices.GetN() / 2 << "enlaces");
 
-	NetDeviceContainer R2Devices;
-
+	NetDeviceContainer R2DevicesTelefonos;
+	NetDeviceContainer R2DevicesRouter;
 	for (uint16_t j = 0; j < telef2; j++) {
 		NetDeviceContainer enlace1 = p2pInterno.Install(NodeContainer(terminales2.Get(j), R.Get(1)));
-		R2Devices.Add(enlace1.Get(0));
-		R2Devices.Add(enlace1.Get(1));
+		R2DevicesTelefonos.Add(enlace1.Get(0));
+		R2DevicesRouter.Add(enlace1.Get(1));
 	}
 
-	NS_LOG_DEBUG("En R2devices tengo: " << R2Devices.GetN() / 2 << "enlaces");
+	//NS_LOG_DEBUG("En R2devices tengo: " << R2Devices.GetN() / 2 << "enlaces");
 
 	//Añado la pila TCP/IP a los dispositivos
 	InternetStackHelper stack;
@@ -294,6 +308,14 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	//no instalo pila de internet a routers, ya están incluidos en terminales1/2
 	stack.Install(terminales1);
 	stack.Install(terminales2);
+
+	NetDeviceContainer R1Devices;
+	R1Devices.Add (R1DevicesTelefonos);
+	R1Devices.Add(R1DevicesRouter);
+
+	NetDeviceContainer R2Devices;
+	R2Devices.Add (R2DevicesTelefonos);
+	R2Devices.Add(R2DevicesRouter);
 
 	Ipv4AddressHelper ipv4;
 	Ipv4InterfaceContainer telefonosSede1;
@@ -318,26 +340,31 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	//Establezco un sumidero de paquetes en cada telefono
 	//Utilizamos el puerto 5600 para el sumidero
 
-	Central centralita(telef1, telef2);
-	uint16_t h = 0;
-	voip ** telefonos1 = (voip **)calloc(telef1, sizeof(voip*));
-	voip ** telefonos2 = (voip **)calloc(telef2, sizeof(voip*));
+	Central centralita(telef1, telef2, observador);
+	voip ** aplicacionTelefonos1 = (voip **)calloc(telef1, sizeof(voip*));
+	voip ** aplicacionTelefonos2 = (voip **)calloc(telef2, sizeof(voip*));
 
 	for (uint32_t i = 0; i < telef1; i++)
 	{
-		telefonos1[i]= new voip(&centralita, tamPkt, Time("4min"), Time("3min"),
-			tasas, R1Devices.Get(h)->GetObject<NetDevice>()->GetAddress(), terminales1.Get(i));
-		h += 2;
+		NS_LOG_DEBUG("Direccion IPv4: "<< telefonosSede1.GetAddress(i));
+		//R1DevicesTelefonos.Get(i)->GetObject<NetDevice>()->GetAddress()
+		aplicacionTelefonos1[i] = new voip(&centralita, tamPkt, Time("20s"), Time("100s"),
+			tasas, telefonosSede1.GetAddress(i), terminales1.Get(i));
+		terminales1.Get(i)->AddApplication(aplicacionTelefonos1[i]);
+		aplicacionTelefonos1[i]->SetStartTime(Seconds(1.0));
+		aplicacionTelefonos1[i]->SetStopTime(Seconds(10.0));
 	}
 
-	h = 0;
 	for (uint32_t i = 0; i < telef2; i++)
 	{
-		telefonos2[i] = new voip(&centralita, tamPkt, Time("4min"), Time("3min"),
-			tasas, R2Devices.Get(h)->GetObject<NetDevice>()->GetAddress(), terminales2.Get(i));
-		h += 2;
+		//R2DevicesTelefonos.Get(i)->GetObject<NetDevice>()->GetAddress()
+		aplicacionTelefonos2[i] = new voip(&centralita, tamPkt, Time("20s"), Time("10s"),
+			tasas, telefonosSede2.GetAddress(i), terminales2.Get(i));
+		terminales2.Get(i)->AddApplication(aplicacionTelefonos2[i]);
+		
+		aplicacionTelefonos2[i]->SetStartTime(Seconds(1.0));
+		aplicacionTelefonos2[i]->SetStopTime(Seconds(10.0));
 	}
-
 
 
 
@@ -373,35 +400,50 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	Ptr <Node> n2 = R.Get(1);
 	Ptr<Ipv4> punteroIp2 = n2->GetObject<Ipv4>();
 
-	cambiaEnlace(Time("1s"), punteroIp1, punteroIp2, resultado->enlaces);
+	cambiaEnlace(Time("15s"), punteroIp1, punteroIp2, resultado->enlaces);
 
 
 	//SUSCRIPCION DE TRAZAS
 
-	p2p.EnablePcap("simvoip", Rdevices, true);
+	//p2p.EnablePcap("telefonos-1", R1Devices, true);
 
-	for (i = 0; i <= telef1; i++)
+
+
+	for (uint16_t i = 0; i < telef1; i++)
 	{
-		terminales1.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido, &observador));
-		terminales1.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, &observador));
-	}
-	for (i = 0; i <= telef2; i++)
-	{
-		terminales2.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido, &observador));
-		terminales2.Get(i)->GetObject<PointToPointNetDevice>()->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, &observador));
+		
+		R1DevicesTelefonos.Get(i)->TraceConnectWithoutContext("PhyRxEnd", MakeCallback(&Observador::PktRecibido, observador));
+		R1DevicesTelefonos.Get(i)->TraceConnectWithoutContext("PhyTxBegin", MakeCallback(&Observador::PktEnviado, observador));
+		NS_LOG_DEBUG("El nodo de R1 al que le instalo el observador es: "<<R1DevicesTelefonos.Get(i)->GetNode()->GetId());
+		NS_LOG_DEBUG("El nodo de R1 tiene: "<<R1DevicesTelefonos.Get(i)->GetNode()->GetNDevices() << " devices");
+		NS_LOG_DEBUG("El nodo de R1 tiene: "<<R1DevicesTelefonos.Get(i)->GetNode()->GetNApplications() << " aplicaciones");
+		NS_LOG_DEBUG("La direccion del netdevice es: "<<R1DevicesTelefonos.Get(i)->GetAddress() );
 
 	}
+
+	for (uint16_t i = 0; i < telef2; i++)
+	{
+		R2DevicesTelefonos.Get(i)->TraceConnectWithoutContext("PhyRxEnd", MakeCallback(&Observador::PktRecibido,observador));
+		R2DevicesTelefonos.Get(i)->TraceConnectWithoutContext("PhyTxBegin", MakeCallback(&Observador::PktEnviado, observador));
+		NS_LOG_DEBUG("El nodo de R2 al que le instalo el observador es: "<<R2DevicesTelefonos.Get(i)->GetNode()->GetId());
+		NS_LOG_DEBUG("El nodo de R2 tiene: "<<R2DevicesTelefonos.Get(i)->GetNode()->GetNDevices() << " devices");
+		NS_LOG_DEBUG("El nodo de R2 tiene: "<<R2DevicesTelefonos.Get(i)->GetNode()->GetNApplications() << " aplicaciones");
+		NS_LOG_DEBUG("La direccion del netdevice es: "<<R2DevicesTelefonos.Get(i)->GetAddress() );
+
+	}
+
+	
 	Simulator::Run();
 	Simulator::Destroy();
 
 	for (uint32_t c = 0; c < telef1; c++)
-		delete(telefonos1[c]);
+		delete(aplicacionTelefonos1[c]);
 
 	for (uint32_t c = 0; c < telef2; c++)
-		delete(telefonos2[c]);
+		delete(aplicacionTelefonos2[c]);
 
-	free(telefonos1);
-	free(telefonos2);
+	free(aplicacionTelefonos1);
+	free(aplicacionTelefonos2);
 }
 
 
@@ -419,13 +461,13 @@ void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz)
 		R1->SetMetric(j, metrica); //enlaces de R1
 
 		R2->SetMetric(j, metrica); //enlaces de R2
-
+		NS_LOG_DEBUG("Cambiando a enlace " << (uint32_t)j);
 
 		metrica++;
 		if (metrica >= interfaz)
 		{
 			metrica = 0;
-			NS_LOG_DEBUG("Cambiando a enlace " << (uint32_t)j);
+			//NS_LOG_DEBUG("Cambiando a enlace " << (uint32_t)j);
 		}
 	}
 
