@@ -18,23 +18,23 @@ class Central
 public:
 	Central(uint32_t tSede1, uint32_t tSede2, Observador * observador);
 	virtual ~Central();
-	/*	Método al que llamará un teléfono cuando quiera hacer una llamada.
-		Decide a qué número intenta llamar el teléfono con una variable aleatoria
-		uniforme y si está libre el teléfono llamante podrá proceder a llamar.
+	/*	Mï¿½todo al que llamarï¿½ un telï¿½fono cuando quiera hacer una llamada.
+		Decide a quï¿½ nï¿½mero intenta llamar el telï¿½fono con una variable aleatoria
+		uniforme y si estï¿½ libre el telï¿½fono llamante podrï¿½ proceder a llamar.
 		Argumentos:
-		- llamante: Número del teléfono llamante.
+		- llamante: Nï¿½mero del telï¿½fono llamante.
 		Devuelve:
-		- Número del teléfono al que llamar.
-		- Valor -1 si el teléfono estaba ocupado.
-		Cuando un teléfono llama a este método, se almacena con quién está hablando
+		- Nï¿½mero del telï¿½fono al que llamar.
+		- Valor -1 si el telï¿½fono estaba ocupado.
+		Cuando un telï¿½fono llama a este mï¿½todo, se almacena con quiï¿½n estï¿½ hablando
 		y se establecen los dos como ocupados. Al acabar la llamada se debe llamar a colgar().
 	*/
 	Ipv4Address llamar(uint32_t llamante, Time duracion, voip ** objeto_llamado);
 
-	/*	Método que desahce una llamada entre dos teléfonos.
+	/*	Mï¿½todo que desahce una llamada entre dos telï¿½fonos.
 		Argumentos:
-		- llamante: Número de teléfono que llamó.
-		Debe llamarse este método tras comenzar una llamada con llamar();
+		- llamante: Nï¿½mero de telï¿½fono que llamï¿½.
+		Debe llamarse este mï¿½todo tras comenzar una llamada con llamar();
 	*/
 	void colgar(uint32_t llamante);
 
@@ -47,15 +47,15 @@ public:
 
 
 private:
-	// Estructura que guarda las llamadas como asignaciones entre números de teléfono
+	// Estructura que guarda las llamadas como asignaciones entre nï¿½meros de telï¿½fono
 	std::map<uint32_t, uint32_t> llamadas;
 	std::map<uint32_t, Ipv4Address> telefonos;
 	// Map que guarda los punteros a los objetos voip de cada nodo
 	std::map<uint32_t, voip*> objetos_voip;
-	// Número de teléfonos en la sede 1
+	// Nï¿½mero de telï¿½fonos en la sede 1
 	uint32_t tel1;
-	// Número de teléfonos en la sede 2
+	// Nï¿½mero de telï¿½fonos en la sede 2
 	uint32_t tel2;
-	Observador * m_observador
+	Observador * m_observador;
 };
 #endif

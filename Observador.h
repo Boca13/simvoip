@@ -25,23 +25,31 @@ public:
 	void PktRecibido(Ptr<const Packet>paquete);
 	float GetJitter(); /* función que actualiza el jitter cada vez que se envia*/
 	float GetRetardo();/* función que actualiza el retardo */
-	float QoSActual(); /*Función que devuelvo el QoS alcanzado*/
+	float GetQoS(); /*Función que devuelvo el QoS alcanzado*/
 	void Reset(); /*bpor si tenemos que reiniciar los valores */
 	std::map<uint64_t, Time> array;
 	std::map<Ipv4Address, Time> arrayTiempoAnterior;
 	void ActualizarNumLlamadas(uint32_t numero);
+	float GetMaxLlamadas();
+	double GetMediaLlamadas();
+	void empiezaTransmitir(Ptr<const Packet>paquete);
+	void terminaTransmitir(Ptr<const Packet>paquete);
+	float GetOcupacion(Time inicio, Time final);
+
+
 private:
 	Time t_enviado; /* time para introducir en la estructura   (se deja de utilizar)*/
 	Time t_encolado; /* tiempo con el que se encola un paquete en el buffer usado para introducir en la estructura*/
 	Time t_TiempoPaqueteAnterior; /*tiempo de la llegada del anterior paquete */
-	float m_enviados;
-	float m_recibidos;
-	float m_perdidos;
+	uint64_t m_recibidos;
+	uint64_t m_perdidos;
+	uint64_t m_enviados;
 	float m_porcentaje; /* variable auxiliar para el porcentaje de paquetes perdidos */
 	float m_QoS;   /* Qos que devolverá QoSActual*/
-	uint64_t m_usuarios; /* (Duda) para calcular usuarios totales hablando al mismo tiempo*/
 	Average<float>Jitter;  /* jitter del buffer */
 	Average<float>Retardo; /* retardo de propagación*/
-	//Falta ACUMULADOR LLAMADO
+	Average<float>acNumLlamadas;
+	Time acumulaTiempo;
+	Time tiempoInicial;
 };
 

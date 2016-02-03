@@ -64,22 +64,26 @@ using namespace ns3;
       //void setTiempo     (Ptr<RandomVariableStream> tiempo);
       bool getOcupado();
    
+
+
     private:
       // Heredadas de Aplication.
       // Inicializa (si hace falta) y llama a ProgramaLlamada 
-      virtual void StartApplication (void){
+      virtual void StartApplication (void);
 
     	  	 //Aqui debe estar la suscripcion a trazas de esta aplicacion (si la hay)
-    	  ProgramaLlamada();
+    	 // ProgramaLlamada();
 
-      }  
+
       // Cancela las llamadas que haya (tanto pendientes como cursandose)
-      virtual void StopApplication (void){
+      virtual void StopApplication (void);
 
-    	  Simulator::Cancel(m_proximallamada);
-    	  Simulator::Cancel(m_llamadaactual);
+    	 // NS_LOG_DEBUG("La aplicacion termina en: "<<Simulator::Now().GetSeconds());
+
+    	 // Simulator::Cancel(m_proximallamada);
+    	 // Simulator::Cancel(m_llamadaactual);
         
-      }   
+
   
       // Cancela la proxima llamada (m_proximaLLamada)
       void CancelaLlamada ();
@@ -100,6 +104,7 @@ using namespace ns3;
       Central *		  m_centralita;
       EventId         m_proximallamada;     // Para poder cancelarla.
       EventId         m_llamadaactual;      // Para poder cancelarla.  
+      EventId		  m_cuelga;				//Para poder cancelar el evento cuelga.
       Time			  m_duracion; // Duracion de la llamada.
 	  Ipv4Address		  m_IP;
 	  Ptr<ExponentialRandomVariable> tiempo_entre_llamadas;

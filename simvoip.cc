@@ -129,7 +129,7 @@ int main(int argc, char *argv[])
 		// Cuenta del tiempo que tarda la iteración
 		Time elapsed = Seconds(Time(0));
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
-		NS_LOG_DEBUG("	Usando " << resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
+		NS_LOG_DEBUG("	Usando " << (uint32_t) resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
 
 		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec, tamPkt);
 		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 		}
 
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
-		NS_LOG_DEBUG("	Usando " << resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
+		NS_LOG_DEBUG("	Usando " << (uint32_t) resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
 		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec, tamPkt);
 		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
 
@@ -215,18 +215,7 @@ int main(int argc, char *argv[])
 	NS_LOG_INFO("Se obtiene una calidad de servicio de " << anterior.qos);
 	return 0;
 }
-//todo decidir que velocidades tendra la red interna de cada sede, por ahora supongo
-//velocidades de 100Mbps
-//todo posible error: a los Routers les estoy instalando las apps que llevan los telefonos y les estoy dando direccionamiento
-//solucionar eso
 
-
-/*
- * velocidades[resultado->velocidad]; ---> velocidad que utilizo en los enlaces.
- *
- *
- *
- */
 
  // TODO: Crear objetos voip y pasarles los parámetros adecuados
 void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2], uint32_t tamPkt)
@@ -319,22 +308,31 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	Ipv4AddressHelper ipv4;
 	Ipv4InterfaceContainer telefonosSede1;
-	ipv4.SetBase("10.1.0.0", "255.255.0.0");
+	ipv4.SetBase("10.1.0.0", "255.255.255.255");
 	telefonosSede1 = ipv4.Assign(R1Devices);
 
 
 	Ipv4InterfaceContainer telefonosSede2;
-	ipv4.SetBase("10.2.0.0", "255.255.0.0");
+	ipv4.SetBase("10.2.0.0", "255.255.255.255");
 	telefonosSede2 = ipv4.Assign(R2Devices);
 
 
 
 	Ipv4InterfaceContainer routers;
-	ipv4.SetBase("10.3.0.0", "255.255.255.0");
+	ipv4.SetBase("150.3.1.0", "255.255.255.0");
 	routers = ipv4.Assign(Rdevices);
 
 
 	Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+
+	// BASURA TABLAS
+	// Trace routing tables 
+	Ipv4GlobalRoutingHelper g;
+	Ptr<OutputStreamWrapper> routingStream = Create<OutputStreamWrapper>("dynamic-global-routing.routes", std::ios::out);
+	g.PrintRoutingTableAllAt(Seconds(1), routingStream);
+
+
+	
 	//Creo aplicacion UDP sumidero y tal.
 
 	//Establezco un sumidero de paquetes en cada telefono
@@ -348,7 +346,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	{
 		NS_LOG_DEBUG("Direccion IPv4: "<< telefonosSede1.GetAddress(i));
 		//R1DevicesTelefonos.Get(i)->GetObject<NetDevice>()->GetAddress()
-		aplicacionTelefonos1[i] = new voip(&centralita, tamPkt, Time("20s"), Time("100s"),
+		aplicacionTelefonos1[i] = new voip(&centralita, tamPkt, Time("2s"), Time("1s"),
 			tasas, telefonosSede1.GetAddress(i), terminales1.Get(i));
 		terminales1.Get(i)->AddApplication(aplicacionTelefonos1[i]);
 		aplicacionTelefonos1[i]->SetStartTime(Seconds(1.0));
@@ -358,7 +356,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	for (uint32_t i = 0; i < telef2; i++)
 	{
 		//R2DevicesTelefonos.Get(i)->GetObject<NetDevice>()->GetAddress()
-		aplicacionTelefonos2[i] = new voip(&centralita, tamPkt, Time("20s"), Time("10s"),
+		aplicacionTelefonos2[i] = new voip(&centralita, tamPkt, Time("2s"), Time("1s"),
 			tasas, telefonosSede2.GetAddress(i), terminales2.Get(i));
 		terminales2.Get(i)->AddApplication(aplicacionTelefonos2[i]);
 		
@@ -378,20 +376,20 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	NS_ASSERT(dtq != 0);
 	UintegerValue limit;
 	dtq->GetAttribute("MaxPackets", limit);
-	NS_LOG_INFO("Tamaño de la cola del Router 1: " << limit.Get() << " paquetes");
+	NS_LOG_DEBUG("Tamaño de la cola del Router 1: " << limit.Get() << " paquetes");
 	dtq->SetAttribute("MaxPackets", UintegerValue(5));
 	dtq->GetAttribute("MaxPackets", limit);
-	NS_LOG_INFO("Tamaño de la cola del Router 1 cambiado a: " << limit.Get() << " paquetes");
+	NS_LOG_DEBUG("Tamaño de la cola del Router 1 cambiado a: " << limit.Get() << " paquetes");
 
 	Rdevices.Get(1)->GetObject<NetDevice>()->GetAttribute("TxQueue", tmp);
 	txQueue = tmp.GetObject();
 	dtq = txQueue->GetObject <DropTailQueue>();
 	NS_ASSERT(dtq != 0);
 	dtq->GetAttribute("MaxPackets", limit);
-	NS_LOG_INFO("Tamaño de la cola del Router 2: " << limit.Get() << " paquetes");
+	NS_LOG_DEBUG("Tamaño de la cola del Router 2: " << limit.Get() << " paquetes");
 	dtq->SetAttribute("MaxPackets", UintegerValue(5));
 	dtq->GetAttribute("MaxPackets", limit);
-	NS_LOG_INFO("Tamaño de la cola del Router 2 cambiado a: " << limit.Get() << " paquetes");
+	NS_LOG_DEBUG("Tamaño de la cola del Router 2 cambiado a: " << limit.Get() << " paquetes");
 
 
 	//Configuracion del cambio de enlace
@@ -400,41 +398,75 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	Ptr <Node> n2 = R.Get(1);
 	Ptr<Ipv4> punteroIp2 = n2->GetObject<Ipv4>();
 
-	cambiaEnlace(Time("15s"), punteroIp1, punteroIp2, resultado->enlaces);
+	cambiaEnlace(MilliSeconds(100), punteroIp1, punteroIp2, resultado->enlaces);
 
 
 	//SUSCRIPCION DE TRAZAS
 
-	//p2p.EnablePcap("telefonos-1", R1Devices, true);
+	p2p.EnablePcap("barranca-1", Rdevices, true);
 
+
+	//Modelamos errores en el canal
+	Ptr<RateErrorModel> em = CreateObject<RateErrorModel>();
+	em->SetAttribute ("ErrorUnit",EnumValue(RateErrorModel::ERROR_UNIT_PACKET));
+	em->SetRate(0.00015);
 
 
 	for (uint16_t i = 0; i < telef1; i++)
 	{
 		
-		R1DevicesTelefonos.Get(i)->TraceConnectWithoutContext("PhyRxEnd", MakeCallback(&Observador::PktRecibido, observador));
-		R1DevicesTelefonos.Get(i)->TraceConnectWithoutContext("PhyTxBegin", MakeCallback(&Observador::PktEnviado, observador));
+		R1DevicesTelefonos.Get(i)->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido, observador));
+		R1DevicesTelefonos.Get(i)->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, observador));
 		NS_LOG_DEBUG("El nodo de R1 al que le instalo el observador es: "<<R1DevicesTelefonos.Get(i)->GetNode()->GetId());
 		NS_LOG_DEBUG("El nodo de R1 tiene: "<<R1DevicesTelefonos.Get(i)->GetNode()->GetNDevices() << " devices");
 		NS_LOG_DEBUG("El nodo de R1 tiene: "<<R1DevicesTelefonos.Get(i)->GetNode()->GetNApplications() << " aplicaciones");
 		NS_LOG_DEBUG("La direccion del netdevice es: "<<R1DevicesTelefonos.Get(i)->GetAddress() );
+		R1DevicesTelefonos.Get(i)->SetAttribute("ReceiveErrorModel",PointerValue(em));
 
 	}
 
 	for (uint16_t i = 0; i < telef2; i++)
 	{
-		R2DevicesTelefonos.Get(i)->TraceConnectWithoutContext("PhyRxEnd", MakeCallback(&Observador::PktRecibido,observador));
-		R2DevicesTelefonos.Get(i)->TraceConnectWithoutContext("PhyTxBegin", MakeCallback(&Observador::PktEnviado, observador));
+		R2DevicesTelefonos.Get(i)->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido,observador));
+		R2DevicesTelefonos.Get(i)->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, observador));
 		NS_LOG_DEBUG("El nodo de R2 al que le instalo el observador es: "<<R2DevicesTelefonos.Get(i)->GetNode()->GetId());
 		NS_LOG_DEBUG("El nodo de R2 tiene: "<<R2DevicesTelefonos.Get(i)->GetNode()->GetNDevices() << " devices");
 		NS_LOG_DEBUG("El nodo de R2 tiene: "<<R2DevicesTelefonos.Get(i)->GetNode()->GetNApplications() << " aplicaciones");
 		NS_LOG_DEBUG("La direccion del netdevice es: "<<R2DevicesTelefonos.Get(i)->GetAddress() );
+		R2DevicesTelefonos.Get(i)->SetAttribute("ReceiveErrorModel",PointerValue(em));
 
 	}
 
-	
+
+	//Instalo una traza en un netdevice de los enlaces entre los Routers para sacar la ocupacion media del enlace
+
+	Rdevices.Get(0)->TraceConnectWithoutContext("PhyTxBegin", MakeCallback(&Observador::empiezaTransmitir,observador));
+	Rdevices.Get(0)->TraceConnectWithoutContext("PhyTxEnd", MakeCallback(&Observador::terminaTransmitir,observador));
+
+	Simulator::Stop(Seconds(10));
 	Simulator::Run();
-	Simulator::Destroy();
+	
+
+	//Obtenemos los datos de la simulacion
+
+
+	//QoS
+
+	float QoS = observador->GetQoS();
+	NS_LOG_INFO("Calidad de Servicio: "<<QoS);
+
+	//Jitter
+
+	float Jitter = observador->GetJitter();
+
+	NS_LOG_INFO("Jitter: "<<Jitter);
+
+	//Retardo
+
+	float retardo = observador->GetRetardo();
+
+	NS_LOG_INFO("Retardo medio de los pkt's: "<<retardo);
+
 
 	for (uint32_t c = 0; c < telef1; c++)
 		delete(aplicacionTelefonos1[c]);
@@ -444,6 +476,8 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	free(aplicacionTelefonos1);
 	free(aplicacionTelefonos2);
+
+	Simulator::Destroy();
 }
 
 
@@ -461,7 +495,7 @@ void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz)
 		R1->SetMetric(j, metrica); //enlaces de R1
 
 		R2->SetMetric(j, metrica); //enlaces de R2
-		NS_LOG_DEBUG("Cambiando a enlace " << (uint32_t)j);
+		//NS_LOG_DEBUG("Cambiando a enlace " << (uint32_t)j);
 
 		metrica++;
 		if (metrica >= interfaz)

@@ -30,6 +30,7 @@ voip::voip(Central * centralita, uint64_t tamPkt, Time media, Time duracion, Dat
 	m_AppOnOff = NULL;
 }
 
+
 TypeId voip::GetTypeId(void)
 {
 	static TypeId tid = TypeId("voip").SetParent<Object>();
@@ -135,7 +136,7 @@ voip::Llama() {
 		//NS_LOG_DEBUG("[voip] El nodo es: " << m_node->GetId());
 		m_appc.Start(Simulator::Now());
 
-		Simulator::Schedule(m_duracion, &voip::Cuelga, this);
+		m_cuelga= Simulator::Schedule(m_duracion, &voip::Cuelga, this);
 	}
 }
 
@@ -185,3 +186,29 @@ void voip::Descuelga(Address destino, Time duracion) {
 	m_llamadaactual = Simulator::Schedule(m_duracion, &voip::Cuelga, this);
 
 }
+void voip::StopApplication(){
+
+NS_LOG_DEBUG("Entro en StopApplication en el tiempo: "<<Simulator::Now().GetSeconds());
+	/*Cuelga();
+	 Simulator::Cancel(m_proximallamada);
+	 Simulator::Cancel(m_llamadaactual);
+	 Simulator::Cancel(m_cuelga);
+*/
+//Simulator::Stop();
+
+
+}
+
+void voip::StartApplication (void){
+
+	NS_LOG_DEBUG("Entro en StartApplication en el tiempo: "<<Simulator::Now().GetSeconds());
+
+	ProgramaLlamada();
+
+}
+
+
+
+
+
+
