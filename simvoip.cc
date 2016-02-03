@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 
 	Time::SetResolution(Time::US);
 
-	
+
 	Punto anterior = { 0,0,0.0 };
 	Punto resultado = { 3,0,0.0 };
 	uint32_t iteraciones = 0;
@@ -123,13 +123,13 @@ int main(int argc, char *argv[])
 	while (resultado.qos < qos_objetivo)
 	{
 		Observador * observador = new Observador();
-	
+
 
 
 		// Cuenta del tiempo que tarda la iteración
 		Time elapsed = Seconds(Time(0));
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
-		NS_LOG_DEBUG("	Usando " << (uint32_t) resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
+		NS_LOG_DEBUG("	Usando " << (uint32_t)resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
 
 		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec, tamPkt);
 		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 
 
 		delete observador;
-			
+
 
 
 		elapsed = Seconds(Time(0)) - elapsed;
@@ -180,7 +180,7 @@ int main(int argc, char *argv[])
 	while (resultado.qos > qos_objetivo)
 	{
 		Observador * observador = new Observador();
-		
+
 
 		// Cuenta del tiempo que tarda la iteración
 		Time elapsed = Seconds(Time(0));
@@ -195,7 +195,7 @@ int main(int argc, char *argv[])
 		}
 
 		NS_LOG_DEBUG("Iteración número " << ++iteraciones);
-		NS_LOG_DEBUG("	Usando " << (uint32_t) resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
+		NS_LOG_DEBUG("	Usando " << (uint32_t)resultado.enlaces << " enlaces a " << velocidades[resultado.velocidad]);
 		simular(&resultado, velocidades, observador, telef1, telef2, tasaCodec, tamPkt);
 		NS_LOG_DEBUG("	QoS obtenida: " << resultado.qos);
 
@@ -205,9 +205,9 @@ int main(int argc, char *argv[])
 		elapsed = Seconds(Time(0)) - elapsed;
 		NS_LOG_DEBUG("La iteración " << iteraciones << " ha tardado " << elapsed.GetSeconds() << " segundos.");
 
-	
+
 		delete observador;
-			
+
 	}
 	// El resultado final es el de la estructura anterior
 	NS_LOG_INFO("¡Simulación finalizada!");
@@ -217,7 +217,7 @@ int main(int argc, char *argv[])
 }
 
 
- // TODO: Crear objetos voip y pasarles los parámetros adecuados
+// TODO: Crear objetos voip y pasarles los parámetros adecuados
 void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observador *observador, uint16_t telef1, uint16_t telef2, DataRate tasas[2], uint32_t tamPkt)
 {
 
@@ -299,31 +299,73 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	stack.Install(terminales2);
 
 	NetDeviceContainer R1Devices;
-	R1Devices.Add (R1DevicesTelefonos);
 	R1Devices.Add(R1DevicesRouter);
+	R1Devices.Add(R1DevicesTelefonos);
 
 	NetDeviceContainer R2Devices;
-	R2Devices.Add (R2DevicesTelefonos);
 	R2Devices.Add(R2DevicesRouter);
+	R2Devices.Add(R2DevicesTelefonos);
 
 	Ipv4AddressHelper ipv4;
 	Ipv4InterfaceContainer telefonosSede1;
-	ipv4.SetBase("10.1.0.0", "255.255.255.255");
+	ipv4.SetBase("10.1.0.0", "255.255.0.0");
 	telefonosSede1 = ipv4.Assign(R1Devices);
 
-
 	Ipv4InterfaceContainer telefonosSede2;
-	ipv4.SetBase("10.2.0.0", "255.255.255.255");
+	ipv4.SetBase("10.2.0.0", "255.255.0.0");
 	telefonosSede2 = ipv4.Assign(R2Devices);
 
-
-
 	Ipv4InterfaceContainer routers;
-	ipv4.SetBase("150.3.1.0", "255.255.255.0");
+	ipv4.SetBase("10.3.0.0", "255.255.255.0");
 	routers = ipv4.Assign(Rdevices);
 
+	//Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+	// Tabla de encaminamiento de los teléfonos de la sede 1
+	for (uint32_t c = 0; c < terminales1.GetN(); c++)
+	{
+		// Añadir rutas estáticas
+		Ipv4StaticRoutingHelper ipv4RoutingHelper;
+		Ptr<Ipv4StaticRouting> tablaT1 = ipv4RoutingHelper.GetStaticRouting(terminales1.Get(c)->GetObject<Ipv4>());
+		Ipv4Address direccion("10.1.0.0");
+		tablaT1->SetDefaultRoute(Ipv4Address(direccion.Get() + c + 1), 1); // Ruta hacia la otra sede pasando por el router
+		NS_LOG_DEBUG("Se ha creado una entrada en la tabla de encaminamiento del teléfono con dirección " << terminales1.Get(c)->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " hacia la direación " << Ipv4Address(direccion.Get() + c + 1));
+	}
 
-	Ipv4GlobalRoutingHelper::PopulateRoutingTables();
+	// Tabla de encaminamiento de los teléfonos de la sede 2
+	for (uint32_t c = 0; c < terminales2.GetN(); c++)
+	{
+		// Añadir rutas estáticas
+		Ipv4StaticRoutingHelper ipv4RoutingHelper;
+		Ptr<Ipv4StaticRouting> tablaT2 = ipv4RoutingHelper.GetStaticRouting(terminales2.Get(c)->GetObject<Ipv4>());
+		Ipv4Address direccion("10.2.0.0");
+		tablaT2->SetDefaultRoute(Ipv4Address(direccion.Get() + c + 1), 1); // Ruta hacia la otra sede pasando por el router
+		NS_LOG_DEBUG("Se ha creado una entrada en la tabla de encaminamiento del teléfono con dirección " << terminales2.Get(c)->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " hacia la dirección " << Ipv4Address(direccion.Get() + c + 1));
+	}
+
+	// Tabla de encaminamiento del router de la sede 1
+	// Añadir rutas estáticas
+	{
+		Ipv4StaticRoutingHelper ipv4RoutingHelper;
+		Ptr<Ipv4StaticRouting> tablaT1 = ipv4RoutingHelper.GetStaticRouting(R.Get(0)->GetObject<Ipv4>());
+		for (uint8_t c = 0; c < resultado->enlaces; c++) // Iteramos en el número de enlaces
+		{ // TODO
+			Ipv4Address direccion("10.3.0.0");
+			tablaT1->SetDefaultRoute(Ipv4Address(direccion.Get() + c + 1), c + 1); // Ruta hacia la otra sede pasando por el router
+			NS_LOG_DEBUG("Se ha creado una entrada en la tabla de encaminamiento del router 1 con dirección " << R.Get(0)->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " hacia la dirección " << Ipv4Address(direccion.Get() + c + 1) << " por la interfaz " << (uint32_t)(c + 1));
+		}
+	}
+	// Tabla de encaminamiento del router de la sede 1
+	// Añadir rutas estáticas
+	{
+		Ipv4StaticRoutingHelper ipv4RoutingHelper;
+		Ptr<Ipv4StaticRouting> tablaT2 = ipv4RoutingHelper.GetStaticRouting(R.Get(0)->GetObject<Ipv4>());
+		for (uint8_t c = 0; c < resultado->enlaces; c++) // Iteramos en el número de enlaces
+		{ // TODO
+			Ipv4Address direccion("10.3.0.0"); // HAY QUE CAMBIAR EL TIPO DE ENTRADA DE DEFAULT RUTE A HOST RUTE CON SU RUTA MADRE
+			tablaT2->SetDefaultRoute(Ipv4Address(direccion.Get() + c + 1 + resultado->enlaces), c + 1); // Ruta hacia la otra sede pasando por el router
+			NS_LOG_DEBUG("Se ha creado una entrada en la tabla de encaminamiento del router 2 con dirección " << R.Get(0)->GetObject<Ipv4>()->GetAddress(1, 0).GetLocal() << " hacia la dirección " << Ipv4Address(direccion.Get() + c + 1 + resultado->enlaces) << " por la interfaz " << (uint32_t)(c + 1));
+		}
+	}
 
 	// BASURA TABLAS
 	// Trace routing tables 
@@ -332,7 +374,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	g.PrintRoutingTableAllAt(Seconds(1), routingStream);
 
 
-	
+
 	//Creo aplicacion UDP sumidero y tal.
 
 	//Establezco un sumidero de paquetes en cada telefono
@@ -344,7 +386,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	for (uint32_t i = 0; i < telef1; i++)
 	{
-		NS_LOG_DEBUG("Direccion IPv4: "<< telefonosSede1.GetAddress(i));
+		NS_LOG_DEBUG("Direccion IPv4: " << telefonosSede1.GetAddress(i));
 		//R1DevicesTelefonos.Get(i)->GetObject<NetDevice>()->GetAddress()
 		aplicacionTelefonos1[i] = new voip(&centralita, tamPkt, Time("2s"), Time("1s"),
 			tasas, telefonosSede1.GetAddress(i), terminales1.Get(i));
@@ -359,7 +401,7 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 		aplicacionTelefonos2[i] = new voip(&centralita, tamPkt, Time("2s"), Time("1s"),
 			tasas, telefonosSede2.GetAddress(i), terminales2.Get(i));
 		terminales2.Get(i)->AddApplication(aplicacionTelefonos2[i]);
-		
+
 		aplicacionTelefonos2[i]->SetStartTime(Seconds(1.0));
 		aplicacionTelefonos2[i]->SetStopTime(Seconds(10.0));
 	}
@@ -408,44 +450,44 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 
 	//Modelamos errores en el canal
 	Ptr<RateErrorModel> em = CreateObject<RateErrorModel>();
-	em->SetAttribute ("ErrorUnit",EnumValue(RateErrorModel::ERROR_UNIT_PACKET));
+	em->SetAttribute("ErrorUnit", EnumValue(RateErrorModel::ERROR_UNIT_PACKET));
 	em->SetRate(0.00015);
 
 
 	for (uint16_t i = 0; i < telef1; i++)
 	{
-		
+
 		R1DevicesTelefonos.Get(i)->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido, observador));
 		R1DevicesTelefonos.Get(i)->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, observador));
-		NS_LOG_DEBUG("El nodo de R1 al que le instalo el observador es: "<<R1DevicesTelefonos.Get(i)->GetNode()->GetId());
-		NS_LOG_DEBUG("El nodo de R1 tiene: "<<R1DevicesTelefonos.Get(i)->GetNode()->GetNDevices() << " devices");
-		NS_LOG_DEBUG("El nodo de R1 tiene: "<<R1DevicesTelefonos.Get(i)->GetNode()->GetNApplications() << " aplicaciones");
-		NS_LOG_DEBUG("La direccion del netdevice es: "<<R1DevicesTelefonos.Get(i)->GetAddress() );
-		R1DevicesTelefonos.Get(i)->SetAttribute("ReceiveErrorModel",PointerValue(em));
+		NS_LOG_DEBUG("El nodo de R1 al que le instalo el observador es: " << R1DevicesTelefonos.Get(i)->GetNode()->GetId());
+		NS_LOG_DEBUG("El nodo de R1 tiene: " << R1DevicesTelefonos.Get(i)->GetNode()->GetNDevices() << " devices");
+		NS_LOG_DEBUG("El nodo de R1 tiene: " << R1DevicesTelefonos.Get(i)->GetNode()->GetNApplications() << " aplicaciones");
+		NS_LOG_DEBUG("La direccion del netdevice es: " << R1DevicesTelefonos.Get(i)->GetAddress());
+		R1DevicesTelefonos.Get(i)->SetAttribute("ReceiveErrorModel", PointerValue(em));
 
 	}
 
 	for (uint16_t i = 0; i < telef2; i++)
 	{
-		R2DevicesTelefonos.Get(i)->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido,observador));
+		R2DevicesTelefonos.Get(i)->TraceConnectWithoutContext("MacRx", MakeCallback(&Observador::PktRecibido, observador));
 		R2DevicesTelefonos.Get(i)->TraceConnectWithoutContext("MacTx", MakeCallback(&Observador::PktEnviado, observador));
-		NS_LOG_DEBUG("El nodo de R2 al que le instalo el observador es: "<<R2DevicesTelefonos.Get(i)->GetNode()->GetId());
-		NS_LOG_DEBUG("El nodo de R2 tiene: "<<R2DevicesTelefonos.Get(i)->GetNode()->GetNDevices() << " devices");
-		NS_LOG_DEBUG("El nodo de R2 tiene: "<<R2DevicesTelefonos.Get(i)->GetNode()->GetNApplications() << " aplicaciones");
-		NS_LOG_DEBUG("La direccion del netdevice es: "<<R2DevicesTelefonos.Get(i)->GetAddress() );
-		R2DevicesTelefonos.Get(i)->SetAttribute("ReceiveErrorModel",PointerValue(em));
+		NS_LOG_DEBUG("El nodo de R2 al que le instalo el observador es: " << R2DevicesTelefonos.Get(i)->GetNode()->GetId());
+		NS_LOG_DEBUG("El nodo de R2 tiene: " << R2DevicesTelefonos.Get(i)->GetNode()->GetNDevices() << " devices");
+		NS_LOG_DEBUG("El nodo de R2 tiene: " << R2DevicesTelefonos.Get(i)->GetNode()->GetNApplications() << " aplicaciones");
+		NS_LOG_DEBUG("La direccion del netdevice es: " << R2DevicesTelefonos.Get(i)->GetAddress());
+		R2DevicesTelefonos.Get(i)->SetAttribute("ReceiveErrorModel", PointerValue(em));
 
 	}
 
 
 	//Instalo una traza en un netdevice de los enlaces entre los Routers para sacar la ocupacion media del enlace
 
-	Rdevices.Get(0)->TraceConnectWithoutContext("PhyTxBegin", MakeCallback(&Observador::empiezaTransmitir,observador));
-	Rdevices.Get(0)->TraceConnectWithoutContext("PhyTxEnd", MakeCallback(&Observador::terminaTransmitir,observador));
+	Rdevices.Get(0)->TraceConnectWithoutContext("PhyTxBegin", MakeCallback(&Observador::empiezaTransmitir, observador));
+	Rdevices.Get(0)->TraceConnectWithoutContext("PhyTxEnd", MakeCallback(&Observador::terminaTransmitir, observador));
 
 	Simulator::Stop(Seconds(10));
 	Simulator::Run();
-	
+
 
 	//Obtenemos los datos de la simulacion
 
@@ -453,19 +495,19 @@ void simular(Punto * resultado, std::map<uint8_t, DataRate> velocidades, Observa
 	//QoS
 
 	float QoS = observador->GetQoS();
-	NS_LOG_INFO("Calidad de Servicio: "<<QoS);
+	NS_LOG_INFO("Calidad de Servicio: " << QoS);
 
 	//Jitter
 
 	float Jitter = observador->GetJitter();
 
-	NS_LOG_INFO("Jitter: "<<Jitter);
+	NS_LOG_INFO("Jitter: " << Jitter);
 
 	//Retardo
 
 	float retardo = observador->GetRetardo();
 
-	NS_LOG_INFO("Retardo medio de los pkt's: "<<retardo);
+	NS_LOG_INFO("Retardo medio de los pkt's: " << retardo);
 
 
 	for (uint32_t c = 0; c < telef1; c++)
@@ -513,7 +555,7 @@ void cambiaEnlace(Time salto, Ptr<Ipv4> R1, Ptr<Ipv4> R2, uint8_t interfaz)
 	//Arreglar esta linea
 	Simulator::Schedule(salto, cambiaEnlace, salto, R1, R2, interfaz);
 
-	
+
 
 }
 
